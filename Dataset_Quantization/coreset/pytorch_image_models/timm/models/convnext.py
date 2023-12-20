@@ -18,78 +18,126 @@ import torch.nn.functional as F
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from .helpers import named_apply, build_model_with_cfg, checkpoint_seq
-from .layers import trunc_normal_, SelectAdaptivePool2d, DropPath, ConvMlp, Mlp, LayerNorm2d, create_conv2d
+from .layers import (
+    trunc_normal_,
+    SelectAdaptivePool2d,
+    DropPath,
+    ConvMlp,
+    Mlp,
+    LayerNorm2d,
+    create_conv2d,
+)
 from .registry import register_model
 
 
-__all__ = ['ConvNeXt']  # model_registry will add each entrypoint fn to this
+__all__ = ["ConvNeXt"]  # model_registry will add each entrypoint fn to this
 
 
-def _cfg(url='', **kwargs):
+def _cfg(url="", **kwargs):
     return {
-        'url': url,
-        'num_classes': 1000, 'input_size': (3, 224, 224), 'pool_size': (7, 7),
-        'crop_pct': 0.875, 'interpolation': 'bicubic',
-        'mean': IMAGENET_DEFAULT_MEAN, 'std': IMAGENET_DEFAULT_STD,
-        'first_conv': 'stem.0', 'classifier': 'head.fc',
-        **kwargs
+        "url": url,
+        "num_classes": 1000,
+        "input_size": (3, 224, 224),
+        "pool_size": (7, 7),
+        "crop_pct": 0.875,
+        "interpolation": "bicubic",
+        "mean": IMAGENET_DEFAULT_MEAN,
+        "std": IMAGENET_DEFAULT_STD,
+        "first_conv": "stem.0",
+        "classifier": "head.fc",
+        **kwargs,
     }
 
 
 default_cfgs = dict(
-    convnext_tiny=_cfg(url="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth"),
-    convnext_small=_cfg(url="https://dl.fbaipublicfiles.com/convnext/convnext_small_1k_224_ema.pth"),
-    convnext_base=_cfg(url="https://dl.fbaipublicfiles.com/convnext/convnext_base_1k_224_ema.pth"),
-    convnext_large=_cfg(url="https://dl.fbaipublicfiles.com/convnext/convnext_large_1k_224_ema.pth"),
-
-    convnext_nano_hnf=_cfg(url=''),
-    convnext_nano_ols=_cfg(url=''),
+    convnext_tiny=_cfg(
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth"
+    ),
+    convnext_small=_cfg(
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_small_1k_224_ema.pth"
+    ),
+    convnext_base=_cfg(
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_base_1k_224_ema.pth"
+    ),
+    convnext_large=_cfg(
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_large_1k_224_ema.pth"
+    ),
+    convnext_nano_hnf=_cfg(url=""),
+    convnext_nano_ols=_cfg(url=""),
     convnext_tiny_hnf=_cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-rsb-weights/convnext_tiny_hnf_a2h-ab7e9df2.pth',
-        crop_pct=0.95),
-
+        url="https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-rsb-weights/convnext_tiny_hnf_a2h-ab7e9df2.pth",
+        crop_pct=0.95,
+    ),
     convnext_tiny_in22ft1k=_cfg(
-        url='https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_1k_224.pth'),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_1k_224.pth"
+    ),
     convnext_small_in22ft1k=_cfg(
-        url='https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_224.pth'),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_224.pth"
+    ),
     convnext_base_in22ft1k=_cfg(
-        url='https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_1k_224.pth'),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_1k_224.pth"
+    ),
     convnext_large_in22ft1k=_cfg(
-        url='https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_1k_224.pth'),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_1k_224.pth"
+    ),
     convnext_xlarge_in22ft1k=_cfg(
-        url='https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_1k_224_ema.pth'),
-
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_1k_224_ema.pth"
+    ),
     convnext_tiny_384_in22ft1k=_cfg(
-        url='https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_1k_384.pth',
-        input_size=(3, 384, 384), pool_size=(12, 12), crop_pct=1.0),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_1k_384.pth",
+        input_size=(3, 384, 384),
+        pool_size=(12, 12),
+        crop_pct=1.0,
+    ),
     convnext_small_384_in22ft1k=_cfg(
-        url='https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth',
-        input_size=(3, 384, 384), pool_size=(12, 12), crop_pct=1.0),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth",
+        input_size=(3, 384, 384),
+        pool_size=(12, 12),
+        crop_pct=1.0,
+    ),
     convnext_base_384_in22ft1k=_cfg(
-        url='https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_1k_384.pth',
-        input_size=(3, 384, 384), pool_size=(12, 12), crop_pct=1.0),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_1k_384.pth",
+        input_size=(3, 384, 384),
+        pool_size=(12, 12),
+        crop_pct=1.0,
+    ),
     convnext_large_384_in22ft1k=_cfg(
-        url='https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_1k_384.pth',
-        input_size=(3, 384, 384), pool_size=(12, 12), crop_pct=1.0),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_1k_384.pth",
+        input_size=(3, 384, 384),
+        pool_size=(12, 12),
+        crop_pct=1.0,
+    ),
     convnext_xlarge_384_in22ft1k=_cfg(
-        url='https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_1k_384_ema.pth',
-        input_size=(3, 384, 384), pool_size=(12, 12), crop_pct=1.0),
-
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_1k_384_ema.pth",
+        input_size=(3, 384, 384),
+        pool_size=(12, 12),
+        crop_pct=1.0,
+    ),
     convnext_tiny_in22k=_cfg(
-        url="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_224.pth", num_classes=21841),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_224.pth",
+        num_classes=21841,
+    ),
     convnext_small_in22k=_cfg(
-        url="https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_224.pth", num_classes=21841),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_224.pth",
+        num_classes=21841,
+    ),
     convnext_base_in22k=_cfg(
-        url="https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_224.pth", num_classes=21841),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_base_22k_224.pth",
+        num_classes=21841,
+    ),
     convnext_large_in22k=_cfg(
-        url="https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_224.pth", num_classes=21841),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_large_22k_224.pth",
+        num_classes=21841,
+    ),
     convnext_xlarge_in22k=_cfg(
-        url="https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_224.pth", num_classes=21841),
+        url="https://dl.fbaipublicfiles.com/convnext/convnext_xlarge_22k_224.pth",
+        num_classes=21841,
+    ),
 )
 
 
 class ConvNeXtBlock(nn.Module):
-    """ ConvNeXt Block
+    """ConvNeXt Block
     There are two equivalent implementations:
       (1) DwConv -> LayerNorm (channels_first) -> 1x1 Conv -> GELU -> 1x1 Conv; all in (N, C, H, W)
       (2) DwConv -> Permute to (N, H, W, C); LayerNorm (channels_last) -> Linear -> GELU -> Linear; Permute back
@@ -105,30 +153,40 @@ class ConvNeXtBlock(nn.Module):
     """
 
     def __init__(
-            self,
-            dim,
-            dim_out=None,
-            stride=1,
-            mlp_ratio=4,
-            conv_mlp=False,
-            conv_bias=True,
-            ls_init_value=1e-6,
-            norm_layer=None,
-            act_layer=nn.GELU,
-            drop_path=0.,
+        self,
+        dim,
+        dim_out=None,
+        stride=1,
+        mlp_ratio=4,
+        conv_mlp=False,
+        conv_bias=True,
+        ls_init_value=1e-6,
+        norm_layer=None,
+        act_layer=nn.GELU,
+        drop_path=0.0,
     ):
         super().__init__()
         dim_out = dim_out or dim
         if not norm_layer:
-            norm_layer = partial(LayerNorm2d, eps=1e-6) if conv_mlp else partial(nn.LayerNorm, eps=1e-6)
+            norm_layer = (
+                partial(LayerNorm2d, eps=1e-6)
+                if conv_mlp
+                else partial(nn.LayerNorm, eps=1e-6)
+            )
         mlp_layer = ConvMlp if conv_mlp else Mlp
         self.use_conv_mlp = conv_mlp
 
-        self.conv_dw = create_conv2d(dim, dim_out, kernel_size=7, stride=stride, depthwise=True, bias=conv_bias)
+        self.conv_dw = create_conv2d(
+            dim, dim_out, kernel_size=7, stride=stride, depthwise=True, bias=conv_bias
+        )
         self.norm = norm_layer(dim_out)
         self.mlp = mlp_layer(dim_out, int(mlp_ratio * dim_out), act_layer=act_layer)
-        self.gamma = nn.Parameter(ls_init_value * torch.ones(dim_out)) if ls_init_value > 0 else None
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.gamma = (
+            nn.Parameter(ls_init_value * torch.ones(dim_out))
+            if ls_init_value > 0
+            else None
+        )
+        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
 
     def forward(self, x):
         shortcut = x
@@ -149,19 +207,18 @@ class ConvNeXtBlock(nn.Module):
 
 
 class ConvNeXtStage(nn.Module):
-
     def __init__(
-            self,
-            in_chs,
-            out_chs,
-            stride=2,
-            depth=2,
-            drop_path_rates=None,
-            ls_init_value=1.0,
-            conv_mlp=False,
-            conv_bias=True,
-            norm_layer=None,
-            norm_layer_cl=None
+        self,
+        in_chs,
+        out_chs,
+        stride=2,
+        depth=2,
+        drop_path_rates=None,
+        ls_init_value=1.0,
+        conv_mlp=False,
+        conv_bias=True,
+        norm_layer=None,
+        norm_layer_cl=None,
     ):
         super().__init__()
         self.grad_checkpointing = False
@@ -169,24 +226,28 @@ class ConvNeXtStage(nn.Module):
         if in_chs != out_chs or stride > 1:
             self.downsample = nn.Sequential(
                 norm_layer(in_chs),
-                nn.Conv2d(in_chs, out_chs, kernel_size=stride, stride=stride, bias=conv_bias),
+                nn.Conv2d(
+                    in_chs, out_chs, kernel_size=stride, stride=stride, bias=conv_bias
+                ),
             )
             in_chs = out_chs
         else:
             self.downsample = nn.Identity()
 
-        drop_path_rates = drop_path_rates or [0.] * depth
+        drop_path_rates = drop_path_rates or [0.0] * depth
         stage_blocks = []
         for i in range(depth):
-            stage_blocks.append(ConvNeXtBlock(
-                dim=in_chs,
-                dim_out=out_chs,
-                drop_path=drop_path_rates[i],
-                ls_init_value=ls_init_value,
-                conv_mlp=conv_mlp,
-                conv_bias=conv_bias,
-                norm_layer=norm_layer if conv_mlp else norm_layer_cl
-            ))
+            stage_blocks.append(
+                ConvNeXtBlock(
+                    dim=in_chs,
+                    dim_out=out_chs,
+                    drop_path=drop_path_rates[i],
+                    ls_init_value=ls_init_value,
+                    conv_mlp=conv_mlp,
+                    conv_bias=conv_bias,
+                    norm_layer=norm_layer if conv_mlp else norm_layer_cl,
+                )
+            )
             in_chs = out_chs
         self.blocks = nn.Sequential(*stage_blocks)
 
@@ -200,7 +261,7 @@ class ConvNeXtStage(nn.Module):
 
 
 class ConvNeXt(nn.Module):
-    r""" ConvNeXt
+    r"""ConvNeXt
         A PyTorch impl of : `A ConvNet for the 2020s`  - https://arxiv.org/pdf/2201.03545.pdf
 
     Args:
@@ -215,24 +276,24 @@ class ConvNeXt(nn.Module):
     """
 
     def __init__(
-            self,
-            in_chans=3,
-            num_classes=1000,
-            global_pool='avg',
-            output_stride=32,
-            depths=(3, 3, 9, 3),
-            dims=(96, 192, 384, 768),
-            ls_init_value=1e-6,
-            stem_type='patch',
-            stem_kernel_size=4,
-            stem_stride=4,
-            head_init_scale=1.,
-            head_norm_first=False,
-            conv_mlp=False,
-            conv_bias=True,
-            norm_layer=None,
-            drop_rate=0.,
-            drop_path_rate=0.,
+        self,
+        in_chans=3,
+        num_classes=1000,
+        global_pool="avg",
+        output_stride=32,
+        depths=(3, 3, 9, 3),
+        dims=(96, 192, 384, 768),
+        ls_init_value=1e-6,
+        stem_type="patch",
+        stem_kernel_size=4,
+        stem_stride=4,
+        head_init_scale=1.0,
+        head_norm_first=False,
+        conv_mlp=False,
+        conv_bias=True,
+        norm_layer=None,
+        drop_rate=0.0,
+        drop_path_rate=0.0,
     ):
         super().__init__()
         assert output_stride == 32
@@ -240,34 +301,49 @@ class ConvNeXt(nn.Module):
             norm_layer = partial(LayerNorm2d, eps=1e-6)
             norm_layer_cl = norm_layer if conv_mlp else partial(nn.LayerNorm, eps=1e-6)
         else:
-            assert conv_mlp,\
-                'If a norm_layer is specified, conv MLP must be used so all norm expect rank-4, channels-first input'
+            assert (
+                conv_mlp
+            ), "If a norm_layer is specified, conv MLP must be used so all norm expect rank-4, channels-first input"
             norm_layer_cl = norm_layer
 
         self.num_classes = num_classes
         self.drop_rate = drop_rate
         self.feature_info = []
 
-        assert stem_type in ('patch', 'overlap')
-        if stem_type == 'patch':
+        assert stem_type in ("patch", "overlap")
+        if stem_type == "patch":
             assert stem_kernel_size == stem_stride
             # NOTE: this stem is a minimal form of ViT PatchEmbed, as used in SwinTransformer w/ patch_size = 4
             self.stem = nn.Sequential(
-                nn.Conv2d(in_chans, dims[0], kernel_size=stem_kernel_size, stride=stem_stride, bias=conv_bias),
-                norm_layer(dims[0])
+                nn.Conv2d(
+                    in_chans,
+                    dims[0],
+                    kernel_size=stem_kernel_size,
+                    stride=stem_stride,
+                    bias=conv_bias,
+                ),
+                norm_layer(dims[0]),
             )
         else:
             self.stem = nn.Sequential(
                 nn.Conv2d(
-                    in_chans, dims[0], kernel_size=stem_kernel_size, stride=stem_stride,
-                    padding=stem_kernel_size // 2, bias=conv_bias),
+                    in_chans,
+                    dims[0],
+                    kernel_size=stem_kernel_size,
+                    stride=stem_stride,
+                    padding=stem_kernel_size // 2,
+                    bias=conv_bias,
+                ),
                 norm_layer(dims[0]),
             )
         prev_chs = dims[0]
         curr_stride = stem_stride
 
         self.stages = nn.Sequential()
-        dp_rates = [x.tolist() for x in torch.linspace(0, drop_path_rate, sum(depths)).split(depths)]
+        dp_rates = [
+            x.tolist()
+            for x in torch.linspace(0, drop_path_rate, sum(depths)).split(depths)
+        ]
         stages = []
         # 4 feature resolution stages, each consisting of multiple residual blocks
         for i in range(4):
@@ -275,45 +351,68 @@ class ConvNeXt(nn.Module):
             # FIXME support dilation / output_stride
             curr_stride *= stride
             out_chs = dims[i]
-            stages.append(ConvNeXtStage(
-                prev_chs,
-                out_chs,
-                stride=stride,
-                depth=depths[i],
-                drop_path_rates=dp_rates[i],
-                ls_init_value=ls_init_value,
-                conv_mlp=conv_mlp,
-                conv_bias=conv_bias,
-                norm_layer=norm_layer,
-                norm_layer_cl=norm_layer_cl
-            ))
+            stages.append(
+                ConvNeXtStage(
+                    prev_chs,
+                    out_chs,
+                    stride=stride,
+                    depth=depths[i],
+                    drop_path_rates=dp_rates[i],
+                    ls_init_value=ls_init_value,
+                    conv_mlp=conv_mlp,
+                    conv_bias=conv_bias,
+                    norm_layer=norm_layer,
+                    norm_layer_cl=norm_layer_cl,
+                )
+            )
             prev_chs = out_chs
             # NOTE feature_info use currently assumes stage 0 == stride 1, rest are stride 2
-            self.feature_info += [dict(num_chs=prev_chs, reduction=curr_stride, module=f'stages.{i}')]
+            self.feature_info += [
+                dict(num_chs=prev_chs, reduction=curr_stride, module=f"stages.{i}")
+            ]
         self.stages = nn.Sequential(*stages)
         self.num_features = prev_chs
 
         # if head_norm_first == true, norm -> global pool -> fc ordering, like most other nets
         # otherwise pool -> norm -> fc, the default ConvNeXt ordering (pretrained FB weights)
-        self.norm_pre = norm_layer(self.num_features) if head_norm_first else nn.Identity()
-        self.head = nn.Sequential(OrderedDict([
-                ('global_pool', SelectAdaptivePool2d(pool_type=global_pool)),
-                ('norm', nn.Identity() if head_norm_first else norm_layer(self.num_features)),
-                ('flatten', nn.Flatten(1) if global_pool else nn.Identity()),
-                ('drop', nn.Dropout(self.drop_rate)),
-                ('fc', nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity())]))
+        self.norm_pre = (
+            norm_layer(self.num_features) if head_norm_first else nn.Identity()
+        )
+        self.head = nn.Sequential(
+            OrderedDict(
+                [
+                    ("global_pool", SelectAdaptivePool2d(pool_type=global_pool)),
+                    (
+                        "norm",
+                        nn.Identity()
+                        if head_norm_first
+                        else norm_layer(self.num_features),
+                    ),
+                    ("flatten", nn.Flatten(1) if global_pool else nn.Identity()),
+                    ("drop", nn.Dropout(self.drop_rate)),
+                    (
+                        "fc",
+                        nn.Linear(self.num_features, num_classes)
+                        if num_classes > 0
+                        else nn.Identity(),
+                    ),
+                ]
+            )
+        )
 
         named_apply(partial(_init_weights, head_init_scale=head_init_scale), self)
 
     @torch.jit.ignore
     def group_matcher(self, coarse=False):
         return dict(
-            stem=r'^stem',
-            blocks=r'^stages\.(\d+)' if coarse else [
-                (r'^stages\.(\d+)\.downsample', (0,)),  # blocks
-                (r'^stages\.(\d+)\.blocks\.(\d+)', None),
-                (r'^norm_pre', (99999,))
-            ]
+            stem=r"^stem",
+            blocks=r"^stages\.(\d+)"
+            if coarse
+            else [
+                (r"^stages\.(\d+)\.downsample", (0,)),  # blocks
+                (r"^stages\.(\d+)\.blocks\.(\d+)", None),
+                (r"^norm_pre", (99999,)),
+            ],
         )
 
     @torch.jit.ignore
@@ -329,7 +428,11 @@ class ConvNeXt(nn.Module):
         if global_pool is not None:
             self.head.global_pool = SelectAdaptivePool2d(pool_type=global_pool)
             self.head.flatten = nn.Flatten(1) if global_pool else nn.Identity()
-        self.head.fc = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+        self.head.fc = (
+            nn.Linear(self.num_features, num_classes)
+            if num_classes > 0
+            else nn.Identity()
+        )
 
     def forward_features(self, x):
         x = self.stem(x)
@@ -353,35 +456,38 @@ class ConvNeXt(nn.Module):
 
 def _init_weights(module, name=None, head_init_scale=1.0):
     if isinstance(module, nn.Conv2d):
-        trunc_normal_(module.weight, std=.02)
+        trunc_normal_(module.weight, std=0.02)
         if module.bias is not None:
             nn.init.zeros_(module.bias)
     elif isinstance(module, nn.Linear):
-        trunc_normal_(module.weight, std=.02)
+        trunc_normal_(module.weight, std=0.02)
         nn.init.zeros_(module.bias)
-        if name and 'head.' in name:
+        if name and "head." in name:
             module.weight.data.mul_(head_init_scale)
             module.bias.data.mul_(head_init_scale)
 
 
 def checkpoint_filter_fn(state_dict, model):
-    """ Remap FB checkpoints -> timm """
-    if 'head.norm.weight' in state_dict or 'norm_pre.weight' in state_dict:
+    """Remap FB checkpoints -> timm"""
+    if "head.norm.weight" in state_dict or "norm_pre.weight" in state_dict:
         return state_dict  # non-FB checkpoint
-    if 'model' in state_dict:
-        state_dict = state_dict['model']
+    if "model" in state_dict:
+        state_dict = state_dict["model"]
     out_dict = {}
     import re
+
     for k, v in state_dict.items():
-        k = k.replace('downsample_layers.0.', 'stem.')
-        k = re.sub(r'stages.([0-9]+).([0-9]+)', r'stages.\1.blocks.\2', k)
-        k = re.sub(r'downsample_layers.([0-9]+).([0-9]+)', r'stages.\1.downsample.\2', k)
-        k = k.replace('dwconv', 'conv_dw')
-        k = k.replace('pwconv', 'mlp.fc')
-        k = k.replace('head.', 'head.fc.')
-        if k.startswith('norm.'):
-            k = k.replace('norm', 'head.norm')
-        if v.ndim == 2 and 'head' not in k:
+        k = k.replace("downsample_layers.0.", "stem.")
+        k = re.sub(r"stages.([0-9]+).([0-9]+)", r"stages.\1.blocks.\2", k)
+        k = re.sub(
+            r"downsample_layers.([0-9]+).([0-9]+)", r"stages.\1.downsample.\2", k
+        )
+        k = k.replace("dwconv", "conv_dw")
+        k = k.replace("pwconv", "mlp.fc")
+        k = k.replace("head.", "head.fc.")
+        if k.startswith("norm."):
+            k = k.replace("norm", "head.norm")
+        if v.ndim == 2 and "head" not in k:
             model_shape = model.state_dict()[k].shape
             v = v.reshape(model_shape)
         out_dict[k] = v
@@ -390,174 +496,225 @@ def checkpoint_filter_fn(state_dict, model):
 
 def _create_convnext(variant, pretrained=False, **kwargs):
     model = build_model_with_cfg(
-        ConvNeXt, variant, pretrained,
+        ConvNeXt,
+        variant,
+        pretrained,
         pretrained_filter_fn=checkpoint_filter_fn,
         feature_cfg=dict(out_indices=(0, 1, 2, 3), flatten_sequential=True),
-        **kwargs)
+        **kwargs,
+    )
     return model
 
 
 @register_model
 def convnext_nano_hnf(pretrained=False, **kwargs):
     model_args = dict(
-        depths=(2, 2, 8, 2), dims=(80, 160, 320, 640), head_norm_first=True, conv_mlp=True, **kwargs)
-    model = _create_convnext('convnext_nano_hnf', pretrained=pretrained, **model_args)
+        depths=(2, 2, 8, 2),
+        dims=(80, 160, 320, 640),
+        head_norm_first=True,
+        conv_mlp=True,
+        **kwargs,
+    )
+    model = _create_convnext("convnext_nano_hnf", pretrained=pretrained, **model_args)
     return model
 
 
 @register_model
 def convnext_nano_ols(pretrained=False, **kwargs):
     model_args = dict(
-        depths=(2, 2, 8, 2), dims=(80, 160, 320, 640), head_norm_first=True, conv_mlp=True,
-        conv_bias=False, stem_type='overlap', stem_kernel_size=9, **kwargs)
-    model = _create_convnext('convnext_nano_ols', pretrained=pretrained, **model_args)
+        depths=(2, 2, 8, 2),
+        dims=(80, 160, 320, 640),
+        head_norm_first=True,
+        conv_mlp=True,
+        conv_bias=False,
+        stem_type="overlap",
+        stem_kernel_size=9,
+        **kwargs,
+    )
+    model = _create_convnext("convnext_nano_ols", pretrained=pretrained, **model_args)
     return model
 
 
 @register_model
 def convnext_tiny_hnf(pretrained=False, **kwargs):
     model_args = dict(
-        depths=(3, 3, 9, 3), dims=(96, 192, 384, 768), head_norm_first=True, conv_mlp=True, **kwargs)
-    model = _create_convnext('convnext_tiny_hnf', pretrained=pretrained, **model_args)
+        depths=(3, 3, 9, 3),
+        dims=(96, 192, 384, 768),
+        head_norm_first=True,
+        conv_mlp=True,
+        **kwargs,
+    )
+    model = _create_convnext("convnext_tiny_hnf", pretrained=pretrained, **model_args)
     return model
 
 
 @register_model
 def convnext_tiny_hnfd(pretrained=False, **kwargs):
     model_args = dict(
-        depths=(3, 3, 9, 3), dims=(96, 192, 384, 768), head_norm_first=True, conv_mlp=True, **kwargs)
-    model = _create_convnext('convnext_tiny_hnf', pretrained=pretrained, **model_args)
+        depths=(3, 3, 9, 3),
+        dims=(96, 192, 384, 768),
+        head_norm_first=True,
+        conv_mlp=True,
+        **kwargs,
+    )
+    model = _create_convnext("convnext_tiny_hnf", pretrained=pretrained, **model_args)
     return model
 
 
 @register_model
 def convnext_tiny(pretrained=False, **kwargs):
     model_args = dict(depths=(3, 3, 9, 3), dims=(96, 192, 384, 768), **kwargs)
-    model = _create_convnext('convnext_tiny', pretrained=pretrained, **model_args)
+    model = _create_convnext("convnext_tiny", pretrained=pretrained, **model_args)
     return model
 
 
 @register_model
 def convnext_small(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[96, 192, 384, 768], **kwargs)
-    model = _create_convnext('convnext_small', pretrained=pretrained, **model_args)
+    model = _create_convnext("convnext_small", pretrained=pretrained, **model_args)
     return model
 
 
 @register_model
 def convnext_base(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[128, 256, 512, 1024], **kwargs)
-    model = _create_convnext('convnext_base', pretrained=pretrained, **model_args)
+    model = _create_convnext("convnext_base", pretrained=pretrained, **model_args)
     return model
 
 
 @register_model
 def convnext_large(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[192, 384, 768, 1536], **kwargs)
-    model = _create_convnext('convnext_large', pretrained=pretrained, **model_args)
+    model = _create_convnext("convnext_large", pretrained=pretrained, **model_args)
     return model
 
 
 @register_model
 def convnext_tiny_in22ft1k(pretrained=False, **kwargs):
     model_args = dict(depths=(3, 3, 9, 3), dims=(96, 192, 384, 768), **kwargs)
-    model = _create_convnext('convnext_tiny_in22ft1k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_tiny_in22ft1k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_small_in22ft1k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[96, 192, 384, 768], **kwargs)
-    model = _create_convnext('convnext_small_in22ft1k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_small_in22ft1k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_base_in22ft1k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[128, 256, 512, 1024], **kwargs)
-    model = _create_convnext('convnext_base_in22ft1k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_base_in22ft1k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_large_in22ft1k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[192, 384, 768, 1536], **kwargs)
-    model = _create_convnext('convnext_large_in22ft1k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_large_in22ft1k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_xlarge_in22ft1k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[256, 512, 1024, 2048], **kwargs)
-    model = _create_convnext('convnext_xlarge_in22ft1k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_xlarge_in22ft1k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_tiny_384_in22ft1k(pretrained=False, **kwargs):
     model_args = dict(depths=(3, 3, 9, 3), dims=(96, 192, 384, 768), **kwargs)
-    model = _create_convnext('convnext_tiny_384_in22ft1k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_tiny_384_in22ft1k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_small_384_in22ft1k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[96, 192, 384, 768], **kwargs)
-    model = _create_convnext('convnext_small_384_in22ft1k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_small_384_in22ft1k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_base_384_in22ft1k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[128, 256, 512, 1024], **kwargs)
-    model = _create_convnext('convnext_base_384_in22ft1k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_base_384_in22ft1k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_large_384_in22ft1k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[192, 384, 768, 1536], **kwargs)
-    model = _create_convnext('convnext_large_384_in22ft1k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_large_384_in22ft1k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_xlarge_384_in22ft1k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[256, 512, 1024, 2048], **kwargs)
-    model = _create_convnext('convnext_xlarge_384_in22ft1k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_xlarge_384_in22ft1k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_tiny_in22k(pretrained=False, **kwargs):
     model_args = dict(depths=(3, 3, 9, 3), dims=(96, 192, 384, 768), **kwargs)
-    model = _create_convnext('convnext_tiny_in22k', pretrained=pretrained, **model_args)
+    model = _create_convnext("convnext_tiny_in22k", pretrained=pretrained, **model_args)
     return model
 
 
 @register_model
 def convnext_small_in22k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[96, 192, 384, 768], **kwargs)
-    model = _create_convnext('convnext_small_in22k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_small_in22k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_base_in22k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[128, 256, 512, 1024], **kwargs)
-    model = _create_convnext('convnext_base_in22k', pretrained=pretrained, **model_args)
+    model = _create_convnext("convnext_base_in22k", pretrained=pretrained, **model_args)
     return model
 
 
 @register_model
 def convnext_large_in22k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[192, 384, 768, 1536], **kwargs)
-    model = _create_convnext('convnext_large_in22k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_large_in22k", pretrained=pretrained, **model_args
+    )
     return model
 
 
 @register_model
 def convnext_xlarge_in22k(pretrained=False, **kwargs):
     model_args = dict(depths=[3, 3, 27, 3], dims=[256, 512, 1024, 2048], **kwargs)
-    model = _create_convnext('convnext_xlarge_in22k', pretrained=pretrained, **model_args)
+    model = _create_convnext(
+        "convnext_xlarge_in22k", pretrained=pretrained, **model_args
+    )
     return model

@@ -27,15 +27,14 @@ from .sgdp import SGDP
 
 try:
     from apex.optimizers import FusedNovoGrad, FusedAdam, FusedLAMB, FusedSGD
+
     has_apex = True
 except ImportError:
     has_apex = False
 
 
 def param_groups_weight_decay(
-        model: nn.Module,
-        weight_decay=1e-5,
-        no_weight_decay_list=()
+    model: nn.Module, weight_decay=1e-5, no_weight_decay_list=()
 ):
     no_weight_decay_list = set(no_weight_decay_list)
     decay = []
@@ -50,8 +49,9 @@ def param_groups_weight_decay(
             decay.append(param)
 
     return [
-        {'params': no_decay, 'weight_decay': 0.},
-        {'params': decay, 'weight_decay': weight_decay}]
+        {"params": no_decay, "weight_decay": 0.0},
+        {"params": decay, "weight_decay": weight_decay},
+    ]
 
 
 def _group(it, size):
@@ -68,7 +68,7 @@ def _layer_map(model, layers_per_group=12, num_groups=None):
         else:
             return n.startswith(hp)
 
-    head_prefix = getattr(model, 'pretrained_cfg', {}).get('classifier', None)
+    head_prefix = getattr(model, "pretrained_cfg", {}).get("classifier", None)
     names_trunk = []
     names_head = []
     for n, _ in model.named_parameters():
@@ -87,11 +87,11 @@ def _layer_map(model, layers_per_group=12, num_groups=None):
 
 
 def param_groups_layer_decay(
-        model: nn.Module,
-        weight_decay: float = 0.05,
-        no_weight_decay_list: Tuple[str] = (),
-        layer_decay: float = .75,
-        end_layer_decay: Optional[float] = None,
+    model: nn.Module,
+    weight_decay: float = 0.05,
+    no_weight_decay_list: Tuple[str] = (),
+    layer_decay: float = 0.75,
+    end_layer_decay: Optional[float] = None,
 ):
     """
     Parameter groups for layer-wise lr decay & weight decay
@@ -101,9 +101,11 @@ def param_groups_layer_decay(
     param_group_names = {}  # NOTE for debugging
     param_groups = {}
 
-    if hasattr(model, 'group_matcher'):
+    if hasattr(model, "group_matcher"):
         # FIXME interface needs more work
-        layer_map = group_parameters(model, model.group_matcher(coarse=False), reverse=True)
+        layer_map = group_parameters(
+            model, model.group_matcher(coarse=False), reverse=True
+        )
     else:
         # fallback
         layer_map = _layer_map(model)
@@ -118,7 +120,7 @@ def param_groups_layer_decay(
         # no decay: all 1D parameters and model specific ones
         if param.ndim == 1 or name in no_weight_decay_list:
             g_decay = "no_decay"
-            this_decay = 0.
+            this_decay = 0.0
         else:
             g_decay = "decay"
             this_decay = weight_decay
@@ -149,27 +151,25 @@ def param_groups_layer_decay(
 
 
 def optimizer_kwargs(cfg):
-    """ cfg/argparse to kwargs helper
+    """cfg/argparse to kwargs helper
     Convert optimizer args in argparse args or cfg like object to keyword args for updated create fn.
     """
     kwargs = dict(
-        opt=cfg.opt,
-        lr=cfg.lr,
-        weight_decay=cfg.weight_decay,
-        momentum=cfg.momentum)
-    if getattr(cfg, 'opt_eps', None) is not None:
-        kwargs['eps'] = cfg.opt_eps
-    if getattr(cfg, 'opt_betas', None) is not None:
-        kwargs['betas'] = cfg.opt_betas
-    if getattr(cfg, 'layer_decay', None) is not None:
-        kwargs['layer_decay'] = cfg.layer_decay
-    if getattr(cfg, 'opt_args', None) is not None:
+        opt=cfg.opt, lr=cfg.lr, weight_decay=cfg.weight_decay, momentum=cfg.momentum
+    )
+    if getattr(cfg, "opt_eps", None) is not None:
+        kwargs["eps"] = cfg.opt_eps
+    if getattr(cfg, "opt_betas", None) is not None:
+        kwargs["betas"] = cfg.opt_betas
+    if getattr(cfg, "layer_decay", None) is not None:
+        kwargs["layer_decay"] = cfg.layer_decay
+    if getattr(cfg, "opt_args", None) is not None:
         kwargs.update(cfg.opt_args)
     return kwargs
 
 
 def create_optimizer(args, model, filter_bias_and_bn=True):
-    """ Legacy optimizer factory for backwards compatibility.
+    """Legacy optimizer factory for backwards compatibility.
     NOTE: Use create_optimizer_v2 for new code.
     """
     return create_optimizer_v2(
@@ -180,16 +180,17 @@ def create_optimizer(args, model, filter_bias_and_bn=True):
 
 
 def create_optimizer_v2(
-        model_or_params,
-        opt: str = 'sgd',
-        lr: Optional[float] = None,
-        weight_decay: float = 0.,
-        momentum: float = 0.9,
-        filter_bias_and_bn: bool = True,
-        layer_decay: Optional[float] = None,
-        param_group_fn: Optional[Callable] = None,
-        **kwargs):
-    """ Create an optimizer.
+    model_or_params,
+    opt: str = "sgd",
+    lr: Optional[float] = None,
+    weight_decay: float = 0.0,
+    momentum: float = 0.9,
+    filter_bias_and_bn: bool = True,
+    layer_decay: Optional[float] = None,
+    param_group_fn: Optional[Callable] = None,
+    **kwargs
+):
+    """Create an optimizer.
 
     TODO currently the model is passed in and all parameters are selected for optimization.
     For more general use an interface that allows selection of parameters to optimize and lr groups, one of:
@@ -211,7 +212,7 @@ def create_optimizer_v2(
     if isinstance(model_or_params, nn.Module):
         # a model was passed in, extract parameters and add weight decays to appropriate layers
         no_weight_decay = {}
-        if hasattr(model_or_params, 'no_weight_decay'):
+        if hasattr(model_or_params, "no_weight_decay"):
             no_weight_decay = model_or_params.no_weight_decay()
 
         if param_group_fn:
@@ -221,11 +222,14 @@ def create_optimizer_v2(
                 model_or_params,
                 weight_decay=weight_decay,
                 layer_decay=layer_decay,
-                no_weight_decay_list=no_weight_decay)
-            weight_decay = 0.
+                no_weight_decay_list=no_weight_decay,
+            )
+            weight_decay = 0.0
         elif weight_decay and filter_bias_and_bn:
-            parameters = param_groups_weight_decay(model_or_params, weight_decay, no_weight_decay)
-            weight_decay = 0.
+            parameters = param_groups_weight_decay(
+                model_or_params, weight_decay, no_weight_decay
+            )
+            weight_decay = 0.0
         else:
             parameters = model_or_params.parameters()
     else:
@@ -233,96 +237,102 @@ def create_optimizer_v2(
         parameters = model_or_params
 
     opt_lower = opt.lower()
-    opt_split = opt_lower.split('_')
+    opt_split = opt_lower.split("_")
     opt_lower = opt_split[-1]
-    if 'fused' in opt_lower:
-        assert has_apex and torch.cuda.is_available(), 'APEX and CUDA required for fused optimizers'
+    if "fused" in opt_lower:
+        assert (
+            has_apex and torch.cuda.is_available()
+        ), "APEX and CUDA required for fused optimizers"
 
     opt_args = dict(weight_decay=weight_decay, **kwargs)
     if lr is not None:
-        opt_args.setdefault('lr', lr)
+        opt_args.setdefault("lr", lr)
 
     # basic SGD & related
-    if opt_lower == 'sgd' or opt_lower == 'nesterov':
+    if opt_lower == "sgd" or opt_lower == "nesterov":
         # NOTE 'sgd' refers to SGD + nesterov momentum for legacy / backwards compat reasons
-        opt_args.pop('eps', None)
+        opt_args.pop("eps", None)
         optimizer = optim.SGD(parameters, momentum=momentum, nesterov=True, **opt_args)
-    elif opt_lower == 'momentum':
-        opt_args.pop('eps', None)
+    elif opt_lower == "momentum":
+        opt_args.pop("eps", None)
         optimizer = optim.SGD(parameters, momentum=momentum, nesterov=False, **opt_args)
-    elif opt_lower == 'sgdp':
+    elif opt_lower == "sgdp":
         optimizer = SGDP(parameters, momentum=momentum, nesterov=True, **opt_args)
 
     # adaptive
-    elif opt_lower == 'adam':
-        optimizer = optim.Adam(parameters, **opt_args) 
-    elif opt_lower == 'adamw':
+    elif opt_lower == "adam":
+        optimizer = optim.Adam(parameters, **opt_args)
+    elif opt_lower == "adamw":
         optimizer = optim.AdamW(parameters, **opt_args)
-    elif opt_lower == 'adamp':
+    elif opt_lower == "adamp":
         optimizer = AdamP(parameters, wd_ratio=0.01, nesterov=True, **opt_args)
-    elif opt_lower == 'nadam':
+    elif opt_lower == "nadam":
         try:
             # NOTE PyTorch >= 1.10 should have native NAdam
             optimizer = optim.Nadam(parameters, **opt_args)
         except AttributeError:
             optimizer = Nadam(parameters, **opt_args)
-    elif opt_lower == 'radam':
+    elif opt_lower == "radam":
         optimizer = RAdam(parameters, **opt_args)
-    elif opt_lower == 'adamax':
+    elif opt_lower == "adamax":
         optimizer = optim.Adamax(parameters, **opt_args)
-    elif opt_lower == 'adabelief':
+    elif opt_lower == "adabelief":
         optimizer = AdaBelief(parameters, rectify=False, **opt_args)
-    elif opt_lower == 'radabelief':
+    elif opt_lower == "radabelief":
         optimizer = AdaBelief(parameters, rectify=True, **opt_args)
-    elif opt_lower == 'adadelta':
+    elif opt_lower == "adadelta":
         optimizer = optim.Adadelta(parameters, **opt_args)
-    elif opt_lower == 'adagrad':
-        opt_args.setdefault('eps', 1e-8)
+    elif opt_lower == "adagrad":
+        opt_args.setdefault("eps", 1e-8)
         optimizer = optim.Adagrad(parameters, **opt_args)
-    elif opt_lower == 'adafactor':
+    elif opt_lower == "adafactor":
         optimizer = Adafactor(parameters, **opt_args)
-    elif opt_lower == 'lamb':
+    elif opt_lower == "lamb":
         optimizer = Lamb(parameters, **opt_args)
-    elif opt_lower == 'lambc':
+    elif opt_lower == "lambc":
         optimizer = Lamb(parameters, trust_clip=True, **opt_args)
-    elif opt_lower == 'larc':
+    elif opt_lower == "larc":
         optimizer = Lars(parameters, momentum=momentum, trust_clip=True, **opt_args)
-    elif opt_lower == 'lars':
+    elif opt_lower == "lars":
         optimizer = Lars(parameters, momentum=momentum, **opt_args)
-    elif opt_lower == 'nlarc':
-        optimizer = Lars(parameters, momentum=momentum, trust_clip=True, nesterov=True, **opt_args)
-    elif opt_lower == 'nlars':
+    elif opt_lower == "nlarc":
+        optimizer = Lars(
+            parameters, momentum=momentum, trust_clip=True, nesterov=True, **opt_args
+        )
+    elif opt_lower == "nlars":
         optimizer = Lars(parameters, momentum=momentum, nesterov=True, **opt_args)
-    elif opt_lower == 'madgrad':
+    elif opt_lower == "madgrad":
         optimizer = MADGRAD(parameters, momentum=momentum, **opt_args)
-    elif opt_lower == 'madgradw':
-        optimizer = MADGRAD(parameters, momentum=momentum, decoupled_decay=True, **opt_args)
-    elif opt_lower == 'novograd' or opt_lower == 'nvnovograd':
+    elif opt_lower == "madgradw":
+        optimizer = MADGRAD(
+            parameters, momentum=momentum, decoupled_decay=True, **opt_args
+        )
+    elif opt_lower == "novograd" or opt_lower == "nvnovograd":
         optimizer = NvNovoGrad(parameters, **opt_args)
-    elif opt_lower == 'rmsprop':
+    elif opt_lower == "rmsprop":
         optimizer = optim.RMSprop(parameters, alpha=0.9, momentum=momentum, **opt_args)
-    elif opt_lower == 'rmsproptf':
+    elif opt_lower == "rmsproptf":
         optimizer = RMSpropTF(parameters, alpha=0.9, momentum=momentum, **opt_args)
 
     # second order
-    elif opt_lower == 'adahessian':
+    elif opt_lower == "adahessian":
         optimizer = Adahessian(parameters, **opt_args)
 
     # NVIDIA fused optimizers, require APEX to be installed
-    elif opt_lower == 'fusedsgd':
-        opt_args.pop('eps', None)
+    elif opt_lower == "fusedsgd":
+        opt_args.pop("eps", None)
         optimizer = FusedSGD(parameters, momentum=momentum, nesterov=True, **opt_args)
-    elif opt_lower == 'fusedmomentum':
-        opt_args.pop('eps', None)
+    elif opt_lower == "fusedmomentum":
+        opt_args.pop("eps", None)
         optimizer = FusedSGD(parameters, momentum=momentum, nesterov=False, **opt_args)
-    elif opt_lower == 'fusedadam':
+    elif opt_lower == "fusedadam":
         optimizer = FusedAdam(parameters, adam_w_mode=False, **opt_args)
-    elif opt_lower == 'fusedadamw':
+    elif opt_lower == "fusedadamw":
         optimizer = FusedAdam(parameters, adam_w_mode=True, **opt_args)
-    elif opt_lower == 'fusedlamb':
+    elif opt_lower == "fusedlamb":
         optimizer = FusedLAMB(parameters, **opt_args)
-    elif opt_lower == 'fusednovograd':
-        opt_args.setdefault('betas', (0.95, 0.98))
+    elif opt_lower == "fusednovograd":
+        opt_args.setdefault("betas", (0.95, 0.98))
         optimizer = FusedNovoGrad(parameters, **opt_args)
 
     else:
@@ -330,7 +340,7 @@ def create_optimizer_v2(
         raise ValueError
 
     if len(opt_split) > 1:
-        if opt_split[0] == 'lookahead':
+        if opt_split[0] == "lookahead":
             optimizer = Lookahead(optimizer)
 
     return optimizer

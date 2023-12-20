@@ -18,33 +18,57 @@ import glob
 import hashlib
 from timm.models.helpers import load_state_dict
 
-parser = argparse.ArgumentParser(description='PyTorch Checkpoint Averager')
-parser.add_argument('--input', default='', type=str, metavar='PATH',
-                    help='path to base input folder containing checkpoints')
-parser.add_argument('--filter', default='*.pth.tar', type=str, metavar='WILDCARD',
-                    help='checkpoint filter (path wildcard)')
-parser.add_argument('--output', default='./averaged.pth', type=str, metavar='PATH',
-                    help='output filename')
-parser.add_argument('--no-use-ema', dest='no_use_ema', action='store_true',
-                    help='Force not using ema version of weights (if present)')
-parser.add_argument('--no-sort', dest='no_sort', action='store_true',
-                    help='Do not sort and select by checkpoint metric, also makes "n" argument irrelevant')
-parser.add_argument('-n', type=int, default=10, metavar='N',
-                    help='Number of checkpoints to average')
+parser = argparse.ArgumentParser(description="PyTorch Checkpoint Averager")
+parser.add_argument(
+    "--input",
+    default="",
+    type=str,
+    metavar="PATH",
+    help="path to base input folder containing checkpoints",
+)
+parser.add_argument(
+    "--filter",
+    default="*.pth.tar",
+    type=str,
+    metavar="WILDCARD",
+    help="checkpoint filter (path wildcard)",
+)
+parser.add_argument(
+    "--output",
+    default="./averaged.pth",
+    type=str,
+    metavar="PATH",
+    help="output filename",
+)
+parser.add_argument(
+    "--no-use-ema",
+    dest="no_use_ema",
+    action="store_true",
+    help="Force not using ema version of weights (if present)",
+)
+parser.add_argument(
+    "--no-sort",
+    dest="no_sort",
+    action="store_true",
+    help='Do not sort and select by checkpoint metric, also makes "n" argument irrelevant',
+)
+parser.add_argument(
+    "-n", type=int, default=10, metavar="N", help="Number of checkpoints to average"
+)
 
 
 def checkpoint_metric(checkpoint_path):
     if not checkpoint_path or not os.path.isfile(checkpoint_path):
         return {}
     print("=> Extracting metric from checkpoint '{}'".format(checkpoint_path))
-    checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    checkpoint = torch.load(checkpoint_path, map_location="cpu")
     metric = None
-    if 'metric' in checkpoint:
-        metric = checkpoint['metric']
-    elif 'metrics' in checkpoint and 'metric_name' in checkpoint:
-        metrics = checkpoint['metrics']
+    if "metric" in checkpoint:
+        metric = checkpoint["metric"]
+    elif "metrics" in checkpoint and "metric_name" in checkpoint:
+        metrics = checkpoint["metrics"]
         print(metrics)
-        metric = metrics[checkpoint['metric_name']]
+        metric = metrics[checkpoint["metric_name"]]
     return metric
 
 
@@ -72,7 +96,7 @@ def main():
             if metric is not None:
                 checkpoint_metrics.append((metric, c))
         checkpoint_metrics = list(sorted(checkpoint_metrics))
-        checkpoint_metrics = checkpoint_metrics[-args.n:]
+        checkpoint_metrics = checkpoint_metrics[-args.n :]
         print("Selected checkpoints:")
         [print(m, c) for m, c in checkpoint_metrics]
         avg_checkpoints = [c for m, c in checkpoint_metrics]
@@ -112,10 +136,10 @@ def main():
     except:
         torch.save(final_state_dict, args.output)
 
-    with open(args.output, 'rb') as f:
+    with open(args.output, "rb") as f:
         sha_hash = hashlib.sha256(f.read()).hexdigest()
     print("=> Saved state_dict to '{}, SHA256: {}'".format(args.output, sha_hash))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

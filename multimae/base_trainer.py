@@ -77,7 +77,7 @@ class BaseTrainer:
         ckpt_track_metric: str = "epoch",
         ckpt_resume: Union[str, os.PathLike, None] = None,
         device: str = "cpu",
-        metrics_on_train: bool = False
+        metrics_on_train: bool = False,
     ):
         """Initialize trainer.
 
@@ -123,8 +123,9 @@ class BaseTrainer:
         self._device = device
         self._metrics_on_train = metrics_on_train
         if self._metrics_on_train:
-            raise NotImplementedError('Metrics on train should be implemented for Classification for example but is not ready now')
-
+            raise NotImplementedError(
+                "Metrics on train should be implemented for Classification for example but is not ready now"
+            )
 
         self._model = model
         self._model.to(device)
@@ -293,11 +294,15 @@ class BaseTrainer:
         for i, (inp, gt) in pbar:
             inp, gt = inp, gt.to(self._device)
 
-            task_dict = {'rgb': inp.to(self._device)} #TODO: make more general
+            task_dict = {k: v.to(self._device) for k, v in inp.items()}
 
-            pred = self._model(task_dict, return_all_layers=True) #TODO: fix return all to only of dpt output adapter
+            pred = self._model(
+                task_dict, return_all_layers=True
+            )  # TODO: fix return all to only of dpt output adapter
             if self._metrics_on_train:
-                scores.append(self.compute_score(self.dict_to_cpu(pred), gt)) # TODO: fix it since now returns only 1 metric by interface
+                scores.append(
+                    self.compute_score(self.dict_to_cpu(pred), gt)
+                )  # TODO: fix it since now returns only 1 metric by interface
 
             loss = self.compute_loss(pred, gt)
             loss.backward()
@@ -325,7 +330,9 @@ class BaseTrainer:
         )
 
         if self._metrics_on_train:
-            self._metric_values = {k: np.mean([d[k].item() for d in scores]) for k in scores[0]}
+            self._metric_values = {
+                k: np.mean([d[k].item() for d in scores]) for k in scores[0]
+            }
             logger.info(
                 "Epoch %04d: train metrics: %s",
                 self._last_epoch + 1,
@@ -347,19 +354,20 @@ class BaseTrainer:
         scores = []
         with torch.no_grad():
             for inp, gt in tqdm(self._val_loader):
-                task_dict = {'rgb': inp.to(self._device)} #TODO: make more general
+                task_dict = {k: v.to(self._device) for k, v in inp.items()}
                 pred = self._model(task_dict, return_all_layers=True)
                 pred = self.dict_to_cpu(pred)
                 scores.append(self.compute_score(pred, gt))
 
-        self._metric_values = {k: np.mean([d[k].item() for d in scores]) for k in scores[0]}
+        self._metric_values = {
+            k: np.mean([d[k].item() for d in scores]) for k in scores[0]
+        }
         logger.info(
             "Epoch %04d: validation metrics: %s",
             self._last_epoch + 1,
             str(self._metric_values),
         )
         logger.info("Epoch %04d: validation finished", self._last_epoch + 1)
-
 
     @staticmethod
     def dict_to_cpu(d):
@@ -455,7 +463,7 @@ class BaseTrainer:
         assert self._val_loader is not None, "Set a val loader to run full cycle"
 
         logger.info("run %s started", self._run_name)
-       # logger.info("using following model configs: \n%s", str(self._model_conf))
+        # logger.info("using following model configs: \n%s", str(self._model_conf))
 
         if self._ckpt_resume is not None:
             logger.info("Resuming from checkpoint '%s'", str(self._ckpt_resume))

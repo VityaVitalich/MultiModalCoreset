@@ -1,4 +1,4 @@
-'''Train CIFAR10 with PyTorch.'''
+"""Train CIFAR10 with PyTorch."""
 import os
 import argparse
 import numpy as np
@@ -18,16 +18,17 @@ from dq.nets import ResNet18
 
 # Training
 def train(epoch, net, trainloader, criterion, optimizer, device):
-    print('\nEpoch: %d' % epoch)
+    print("\nEpoch: %d" % epoch)
     net.train()
     train_loss = 0
-    accuracy = 0.
+    accuracy = 0.0
     correct = 0
     total = 0
     pbar = tqdm(enumerate(trainloader), total=len(trainloader))
     for batch_idx, (inputs, targets) in pbar:
-        pbar.set_description('Loss: {:.3f} Acc: {:.2%}'.format(
-            train_loss / (batch_idx + 1), accuracy))
+        pbar.set_description(
+            "Loss: {:.3f} Acc: {:.2%}".format(train_loss / (batch_idx + 1), accuracy)
+        )
 
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
@@ -46,14 +47,15 @@ def train(epoch, net, trainloader, criterion, optimizer, device):
 def test(best_acc, epoch, net, testloader, criterion, device, result_path):
     net.eval()
     test_loss = 0
-    accuracy = 0.
+    accuracy = 0.0
     correct = 0
     total = 0
     with torch.no_grad():
         pbar = tqdm(enumerate(testloader), total=len(testloader))
         for batch_idx, (inputs, targets) in pbar:
-            pbar.set_description('Loss: {:.3f} Acc: {:.2%}'.format(
-            test_loss / (batch_idx + 1), accuracy))
+            pbar.set_description(
+                "Loss: {:.3f} Acc: {:.2%}".format(test_loss / (batch_idx + 1), accuracy)
+            )
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
@@ -68,38 +70,47 @@ def test(best_acc, epoch, net, testloader, criterion, device, result_path):
     if accuracy > best_acc:
         best_acc = accuracy
 
-        if result_path != '':
-            print('Saving..')
+        if result_path != "":
+            print("Saving..")
             state = {
-                'net': net.state_dict(),
-                'acc': accuracy,
-                'epoch': epoch,
+                "net": net.state_dict(),
+                "acc": accuracy,
+                "epoch": epoch,
             }
             if not os.path.isdir(result_path):
                 os.mkdir(result_path)
-            torch.save(state, os.path.join(result_path, 'ckpt.pth'))
+            torch.save(state, os.path.join(result_path, "ckpt.pth"))
 
     return best_acc
 
-def run_experiment(lr, bs, data_dir, selected_indices, result_path=''):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+def run_experiment(lr, bs, data_dir, selected_indices, result_path=""):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     best_acc = 0  # best test accuracy
-    print('==> Preparing data..')
-    transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+    print("==> Preparing data..")
+    transform_train = transforms.Compose(
+        [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ]
+    )
 
-    transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+    transform_test = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ]
+    )
 
-    if data_dir == '':
+    if data_dir == "":
         trainset = torchvision.datasets.CIFAR10(
-            root='/data/personal/nus-gjy/data', train=True, download=True, transform=transform_train)
+            root="/data/personal/nus-gjy/data",
+            train=True,
+            download=True,
+            transform=transform_train,
+        )
     else:
         trainset = ImageFolder(root=data_dir, transform=transform_train)
 
@@ -110,58 +121,81 @@ def run_experiment(lr, bs, data_dir, selected_indices, result_path=''):
         trainset = torch.utils.data.Subset(trainset, select_indices)
 
     trainloader = torch.utils.data.DataLoader(
-        trainset, batch_size=bs, shuffle=True, num_workers=2)
+        trainset, batch_size=bs, shuffle=True, num_workers=2
+    )
 
     testset = torchvision.datasets.CIFAR10(
-        root='/data/personal/nus-gjy/data', train=False, download=True, transform=transform_test)
+        root="/data/personal/nus-gjy/data",
+        train=False,
+        download=True,
+        transform=transform_test,
+    )
     testloader = torch.utils.data.DataLoader(
-        testset, batch_size=128, shuffle=False, num_workers=2)
+        testset, batch_size=128, shuffle=False, num_workers=2
+    )
 
     # Model
-    print('==> Building model..')
+    print("==> Building model..")
     net = ResNet18(channel=3, num_classes=10, im_size=(32, 32))
     net = net.to(device)
-    if device == 'cuda':
+    if device == "cuda":
         net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=lr,
-                          momentum=0.9, weight_decay=5e-4)
+    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
 
     for epoch in range(150):
         train(epoch, net, trainloader, criterion, optimizer, device)
-        best_acc = test(best_acc, epoch, net, testloader, criterion, device, result_path)
+        best_acc = test(
+            best_acc, epoch, net, testloader, criterion, device, result_path
+        )
         scheduler.step()
         if len(selected_indices) > 0:
-            index_names = '-'.join([index.split('/')[-1][:-4] for index in selected_indices])
-            with open(osp.join(result_path, index_names+'.txt'), 'a') as fp:
-                fp.write(str(epoch) + ' ' + str(best_acc) + '\n')
+            index_names = "-".join(
+                [index.split("/")[-1][:-4] for index in selected_indices]
+            )
+            with open(osp.join(result_path, index_names + ".txt"), "a") as fp:
+                fp.write(str(epoch) + " " + str(best_acc) + "\n")
 
     return best_acc
 
+
 def main():
-    parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-    parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
-    parser.add_argument('--resume', '-r', action='store_true',
-                        help='resume from checkpoint')
-    parser.add_argument('--batch_size', default=128, type=int)
-    parser.add_argument('--data_dir', default='', type=str)
-    parser.add_argument('--select_indices', default=[], type=str, nargs='+',
-                        help='pre-defined subset indices')
-    parser.add_argument('--result_path', default='', type=str,
-                        help='dynamic save path, leave empty if not saving')
+    parser = argparse.ArgumentParser(description="PyTorch CIFAR10 Training")
+    parser.add_argument("--lr", default=0.1, type=float, help="learning rate")
+    parser.add_argument(
+        "--resume", "-r", action="store_true", help="resume from checkpoint"
+    )
+    parser.add_argument("--batch_size", default=128, type=int)
+    parser.add_argument("--data_dir", default="", type=str)
+    parser.add_argument(
+        "--select_indices",
+        default=[],
+        type=str,
+        nargs="+",
+        help="pre-defined subset indices",
+    )
+    parser.add_argument(
+        "--result_path",
+        default="",
+        type=str,
+        help="dynamic save path, leave empty if not saving",
+    )
     args = parser.parse_args()
 
     print(args)
-    best_acc = run_experiment(args.lr,
-                        args.batch_size,
-                        data_dir=args.data_dir,
-                        selected_indices=args.select_indices, 
-                        result_path=args.result_path)
+    best_acc = run_experiment(
+        args.lr,
+        args.batch_size,
+        data_dir=args.data_dir,
+        selected_indices=args.select_indices,
+        result_path=args.result_path,
+    )
 
     print(best_acc)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

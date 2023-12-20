@@ -5,34 +5,72 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 
 
-class CustomDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
+class FirstChannelTransform:
+    def __init__(self):
+        pass
+
+    def __call__(self, x: torch.Tensor):
+        return x[0]
+
+
+class LongTransform:
+    def __init__(self):
+        pass
+
+    def __call__(self, x: torch.Tensor):
+        return x.long()
+
+
+class MultiModalDataset(Dataset):
+    def __init__(
+        self,
+        root_dir,
+        train_transform=None,
+        target_transofrm=None,
+        input_tasks=["rgb"],
+        output_task="depth",
+    ):
         self.root_dir = root_dir
-        self.transform = transform
-        self.rgb_path = os.path.join(root_dir, 'rgb')
-        self.depth_path = os.path.join(root_dir, 'depth_euclidean')
-        self.rgb_files = sorted(os.listdir(self.rgb_path))
-        self.depth_files = sorted(os.listdir(self.depth_path))
+        self.train_transform = train_transform
+        self.target_transform = target_transofrm
+        self.input_tasks = input_tasks
+        self.output_task = output_task
+        self.all_tasks = input_tasks + [output_task]
+        for task_name in self.all_tasks:
+            task_path = os.path.join(root_dir, task_name)
+            self.__dict__[task_name + "_path"] = task_path
+            self.__dict__[task_name + "_files"] = sorted(os.listdir(task_path))
 
     def __len__(self):
-        return len(self.rgb_files)
+        task = self.all_tasks[0]
+        return len(self.__dict__[task + "_files"])
 
     def __getitem__(self, idx):
-        rgb_name = self.rgb_files[idx]
-        depth_name = self.depth_files[idx]
+        # obtain input object
+        sample_dict = {}
+        for task in self.input_tasks:
+            file_name = self.__dict__[task + "_files"][idx]
+            file_path = os.path.join(self.__dict__[task + "_path"], file_name)
+            x = Image.open(file_path)
+            if task == "rgb":
+                x = x.convert("RGB")
+            if task == "semantic":
+                x = x.convert("L")
 
-        assert rgb_name == depth_name
+            if self.train_transform:
+                x = self.train_transform[task](x)
+            sample_dict[task] = x
 
-        rgb_img_path = os.path.join(self.rgb_path, rgb_name)
-        depth_img_path = os.path.join(self.depth_path, depth_name)
+        # obtain target
+        target_file_name = self.__dict__[self.output_task + "_files"][idx]
+        target_file_path = os.path.join(
+            self.__dict__[self.output_task + "_path"], file_name
+        )
+        y = Image.open(target_file_path)
 
-        rgb_image = Image.open(rgb_img_path).convert('RGB')
-        depth_image = Image.open(depth_img_path)#.convert('L')  # 'L' mode for grayscale images
+        assert file_name == target_file_name
 
-        if self.transform:
-            rgb_image = self.transform(rgb_image)
-            depth_image = self.transform(depth_image)
+        if self.target_transform:
+            y = self.target_transform(y)
 
-        return rgb_image, depth_image
-
-
+        return sample_dict, y

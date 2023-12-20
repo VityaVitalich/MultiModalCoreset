@@ -16,15 +16,28 @@ class WeightedSubset(torch.utils.data.Subset):
 
     def __getitem__(self, idx):
         if isinstance(idx, list):
-            return self.dataset[[self.indices[i] for i in idx]], self.weights[[i for i in idx]]
+            return (
+                self.dataset[[self.indices[i] for i in idx]],
+                self.weights[[i for i in idx]],
+            )
         return self.dataset[self.indices[idx]], self.weights[idx]
 
 
-def train(train_loader, network, criterion, optimizer, scheduler, epoch, args, rec, if_weighted: bool = False):
+def train(
+    train_loader,
+    network,
+    criterion,
+    optimizer,
+    scheduler,
+    epoch,
+    args,
+    rec,
+    if_weighted: bool = False,
+):
     """Train for one epoch on the training set"""
-    batch_time = AverageMeter('Time', ':6.3f')
-    losses = AverageMeter('Loss', ':.4e')
-    top1 = AverageMeter('Acc@1', ':6.2f')
+    batch_time = AverageMeter("Time", ":6.3f")
+    losses = AverageMeter("Loss", ":.4e")
+    top1 = AverageMeter("Acc@1", ":6.2f")
 
     # switch to train mode
     network.train()
@@ -63,20 +76,33 @@ def train(train_loader, network, criterion, optimizer, scheduler, epoch, args, r
         end = time.time()
 
         if i % args.print_freq == 0:
-            print('Epoch: [{0}][{1}/{2}]\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
-                epoch, i, len(train_loader), batch_time=batch_time,
-                loss=losses, top1=top1))
+            print(
+                "Epoch: [{0}][{1}/{2}]\t"
+                "Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t"
+                "Loss {loss.val:.4f} ({loss.avg:.4f})\t"
+                "Prec@1 {top1.val:.3f} ({top1.avg:.3f})".format(
+                    epoch,
+                    i,
+                    len(train_loader),
+                    batch_time=batch_time,
+                    loss=losses,
+                    top1=top1,
+                )
+            )
 
-    record_train_stats(rec, epoch, losses.avg, top1.avg, optimizer.state_dict()['param_groups'][0]['lr'])
+    record_train_stats(
+        rec,
+        epoch,
+        losses.avg,
+        top1.avg,
+        optimizer.state_dict()["param_groups"][0]["lr"],
+    )
 
 
 def test(test_loader, network, criterion, epoch, args, rec):
-    batch_time = AverageMeter('Time', ':6.3f')
-    losses = AverageMeter('Loss', ':.4e')
-    top1 = AverageMeter('Acc@1', ':6.2f')
+    batch_time = AverageMeter("Time", ":6.3f")
+    losses = AverageMeter("Loss", ":.4e")
+    top1 = AverageMeter("Acc@1", ":6.2f")
 
     # Switch to evaluate mode
     network.eval()
@@ -103,14 +129,16 @@ def test(test_loader, network, criterion, epoch, args, rec):
         end = time.time()
 
         if i % args.print_freq == 0:
-            print('Test: [{0}/{1}]\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
-                i, len(test_loader), batch_time=batch_time, loss=losses,
-                top1=top1))
+            print(
+                "Test: [{0}/{1}]\t"
+                "Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t"
+                "Loss {loss.val:.4f} ({loss.avg:.4f})\t"
+                "Prec@1 {top1.val:.3f} ({top1.avg:.3f})".format(
+                    i, len(test_loader), batch_time=batch_time, loss=losses, top1=top1
+                )
+            )
 
-    print(' * Prec@1 {top1.avg:.3f}'.format(top1=top1))
+    print(" * Prec@1 {top1.avg:.3f}".format(top1=top1))
 
     network.no_grad = False
 
@@ -121,7 +149,7 @@ def test(test_loader, network, criterion, epoch, args, rec):
 class AverageMeter(object):
     """Computes and stores the average and current value"""
 
-    def __init__(self, name, fmt=':f'):
+    def __init__(self, name, fmt=":f"):
         self.name = name
         self.fmt = fmt
         self.reset()
@@ -139,7 +167,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
     def __str__(self):
-        fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
+        fmtstr = "{name} {val" + self.fmt + "} ({avg" + self.fmt + "})"
         return fmtstr.format(**self.__dict__)
 
 
@@ -164,12 +192,12 @@ def str_to_bool(v):
     # Handle boolean type in arguments.
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
-        raise ArgumentTypeError('Boolean value expected.')
+        raise ArgumentTypeError("Boolean value expected.")
 
 
 def save_checkpoint(state, path, epoch, prec):
@@ -179,6 +207,7 @@ def save_checkpoint(state, path, epoch, prec):
 
 def init_recorder():
     from types import SimpleNamespace
+
     rec = SimpleNamespace()
     rec.train_step = []
     rec.train_loss = []

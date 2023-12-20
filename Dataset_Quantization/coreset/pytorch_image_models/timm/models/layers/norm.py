@@ -15,7 +15,7 @@ class GroupNorm(nn.GroupNorm):
 
 
 class GroupNorm1(nn.GroupNorm):
-    """ Group Normalization with 1 group.
+    """Group Normalization with 1 group.
     Input: tensor in shape [B, C, *]
     """
 
@@ -24,13 +24,19 @@ class GroupNorm1(nn.GroupNorm):
 
 
 class LayerNorm2d(nn.LayerNorm):
-    """ LayerNorm for channels of '2D' spatial NCHW tensors """
+    """LayerNorm for channels of '2D' spatial NCHW tensors"""
+
     def __init__(self, num_channels, eps=1e-6, affine=True):
         super().__init__(num_channels, eps=eps, elementwise_affine=affine)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return F.layer_norm(
-            x.permute(0, 2, 3, 1), self.normalized_shape, self.weight, self.bias, self.eps).permute(0, 3, 1, 2)
+            x.permute(0, 2, 3, 1),
+            self.normalized_shape,
+            self.weight,
+            self.bias,
+            self.eps,
+        ).permute(0, 3, 1, 2)
 
 
 def _is_contiguous(tensor: torch.Tensor) -> bool:
@@ -44,7 +50,9 @@ def _is_contiguous(tensor: torch.Tensor) -> bool:
 
 
 @torch.jit.script
-def _layer_norm_cf(x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, eps: float):
+def _layer_norm_cf(
+    x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, eps: float
+):
     s, u = torch.var_mean(x, dim=1, unbiased=False, keepdim=True)
     x = (x - u) * torch.rsqrt(s + eps)
     x = x * weight[:, None, None] + bias[:, None, None]
@@ -52,7 +60,7 @@ def _layer_norm_cf(x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, ep
 
 
 class LayerNormExp2d(nn.LayerNorm):
-    """ LayerNorm for channels_first tensors with 2d spatial dimensions (ie N, C, H, W).
+    """LayerNorm for channels_first tensors with 2d spatial dimensions (ie N, C, H, W).
 
     Experimental implementation w/ manual norm for tensors non-contiguous tensors.
 
@@ -66,7 +74,12 @@ class LayerNormExp2d(nn.LayerNorm):
     def forward(self, x) -> torch.Tensor:
         if _is_contiguous(x):
             x = F.layer_norm(
-                x.permute(0, 2, 3, 1), self.normalized_shape, self.weight, self.bias, self.eps).permute(0, 3, 1, 2)
+                x.permute(0, 2, 3, 1),
+                self.normalized_shape,
+                self.weight,
+                self.bias,
+                self.eps,
+            ).permute(0, 3, 1, 2)
         else:
             x = _layer_norm_cf(x, self.weight, self.bias, self.eps)
         return x

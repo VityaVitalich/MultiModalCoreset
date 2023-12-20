@@ -9,7 +9,10 @@ from torch import nn
 from .features import _get_feature_info
 
 try:
-    from torchvision.models.feature_extraction import create_feature_extractor as _create_feature_extractor
+    from torchvision.models.feature_extraction import (
+        create_feature_extractor as _create_feature_extractor,
+    )
+
     has_fx_feature_extraction = True
 except ImportError:
     has_fx_feature_extraction = False
@@ -24,12 +27,17 @@ from .layers.pool2d_same import MaxPool2dSame, AvgPool2dSame
 _leaf_modules = {
     BilinearAttnTransform,  # reason: flow control t <= 1
     # Reason: get_same_padding has a max which raises a control flow error
-    Conv2dSame, MaxPool2dSame, ScaledStdConv2dSame, StdConv2dSame, AvgPool2dSame,
+    Conv2dSame,
+    MaxPool2dSame,
+    ScaledStdConv2dSame,
+    StdConv2dSame,
+    AvgPool2dSame,
     CondConv2d,  # reason: TypeError: F.conv2d received Proxy in groups=self.groups * B (because B = x.shape[0])
 }
 
 try:
     from .layers import InplaceAbn
+
     _leaf_modules.add(InplaceAbn)
 except ImportError:
     pass
@@ -55,26 +63,38 @@ def register_notrace_function(func: Callable):
     return func
 
 
-def create_feature_extractor(model: nn.Module, return_nodes: Union[Dict[str, str], List[str]]):
-    assert has_fx_feature_extraction, 'Please update to PyTorch 1.10+, torchvision 0.11+ for FX feature extraction'
+def create_feature_extractor(
+    model: nn.Module, return_nodes: Union[Dict[str, str], List[str]]
+):
+    assert (
+        has_fx_feature_extraction
+    ), "Please update to PyTorch 1.10+, torchvision 0.11+ for FX feature extraction"
     return _create_feature_extractor(
-        model, return_nodes,
-        tracer_kwargs={'leaf_modules': list(_leaf_modules), 'autowrap_functions': list(_autowrap_functions)}
+        model,
+        return_nodes,
+        tracer_kwargs={
+            "leaf_modules": list(_leaf_modules),
+            "autowrap_functions": list(_autowrap_functions),
+        },
     )
 
 
 class FeatureGraphNet(nn.Module):
-    """ A FX Graph based feature extractor that works with the model feature_info metadata
-    """
+    """A FX Graph based feature extractor that works with the model feature_info metadata"""
+
     def __init__(self, model, out_indices, out_map=None):
         super().__init__()
-        assert has_fx_feature_extraction, 'Please update to PyTorch 1.10+, torchvision 0.11+ for FX feature extraction'
+        assert (
+            has_fx_feature_extraction
+        ), "Please update to PyTorch 1.10+, torchvision 0.11+ for FX feature extraction"
         self.feature_info = _get_feature_info(model, out_indices)
         if out_map is not None:
             assert len(out_map) == len(out_indices)
         return_nodes = {
-            info['module']: out_map[i] if out_map is not None else info['module']
-            for i, info in enumerate(self.feature_info) if i in out_indices}
+            info["module"]: out_map[i] if out_map is not None else info["module"]
+            for i, info in enumerate(self.feature_info)
+            if i in out_indices
+        }
         self.graph_module = create_feature_extractor(model, return_nodes)
 
     def forward(self, x):
@@ -82,7 +102,7 @@ class FeatureGraphNet(nn.Module):
 
 
 class GraphExtractNet(nn.Module):
-    """ A standalone feature extraction wrapper that maps dict -> list or single tensor
+    """A standalone feature extraction wrapper that maps dict -> list or single tensor
     NOTE:
       * one can use feature_extractor directly if dictionary output is desired
       * unlike FeatureGraphNet, this is intended to be used standalone and not with model feature_info
@@ -94,7 +114,13 @@ class GraphExtractNet(nn.Module):
         return_nodes: node names to return features from (dict or list)
         squeeze_out: if only one output, and output in list format, flatten to single tensor
     """
-    def __init__(self, model, return_nodes: Union[Dict[str, str], List[str]], squeeze_out: bool = True):
+
+    def __init__(
+        self,
+        model,
+        return_nodes: Union[Dict[str, str], List[str]],
+        squeeze_out: bool = True,
+    ):
         super().__init__()
         self.squeeze_out = squeeze_out
         self.graph_module = create_feature_extractor(model, return_nodes)

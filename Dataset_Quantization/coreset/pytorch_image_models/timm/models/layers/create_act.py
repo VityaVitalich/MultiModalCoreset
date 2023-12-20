@@ -11,10 +11,10 @@ from .config import is_exportable, is_scriptable, is_no_jit
 # PyTorch has an optimized, native 'silu' (aka 'swish') operator as of PyTorch 1.7.
 # Also hardsigmoid, hardswish, and soon mish. This code will use native version if present.
 # Eventually, the custom SiLU, Mish, Hard*, layers will be removed and only native variants will be used.
-_has_silu = 'silu' in dir(torch.nn.functional)
-_has_hardswish = 'hardswish' in dir(torch.nn.functional)
-_has_hardsigmoid = 'hardsigmoid' in dir(torch.nn.functional)
-_has_mish = 'mish' in dir(torch.nn.functional)
+_has_silu = "silu" in dir(torch.nn.functional)
+_has_hardswish = "hardswish" in dir(torch.nn.functional)
+_has_hardsigmoid = "hardsigmoid" in dir(torch.nn.functional)
+_has_mish = "mish" in dir(torch.nn.functional)
 
 
 _ACT_FN_DEFAULT = dict(
@@ -41,7 +41,7 @@ _ACT_FN_JIT = dict(
     mish=F.mish if _has_mish else mish_jit,
     hard_sigmoid=F.hardsigmoid if _has_hardsigmoid else hard_sigmoid_jit,
     hard_swish=F.hardswish if _has_hardswish else hard_swish_jit,
-    hard_mish=hard_mish_jit
+    hard_mish=hard_mish_jit,
 )
 
 _ACT_FN_ME = dict(
@@ -55,8 +55,8 @@ _ACT_FN_ME = dict(
 
 _ACT_FNS = (_ACT_FN_ME, _ACT_FN_JIT, _ACT_FN_DEFAULT)
 for a in _ACT_FNS:
-    a.setdefault('hardsigmoid', a.get('hard_sigmoid'))
-    a.setdefault('hardswish', a.get('hard_swish'))
+    a.setdefault("hardsigmoid", a.get("hard_sigmoid"))
+    a.setdefault("hardswish", a.get("hard_swish"))
 
 
 _ACT_LAYER_DEFAULT = dict(
@@ -84,7 +84,7 @@ _ACT_LAYER_JIT = dict(
     mish=nn.Mish if _has_mish else MishJit,
     hard_sigmoid=nn.Hardsigmoid if _has_hardsigmoid else HardSigmoidJit,
     hard_swish=nn.Hardswish if _has_hardswish else HardSwishJit,
-    hard_mish=HardMishJit
+    hard_mish=HardMishJit,
 )
 
 _ACT_LAYER_ME = dict(
@@ -98,12 +98,12 @@ _ACT_LAYER_ME = dict(
 
 _ACT_LAYERS = (_ACT_LAYER_ME, _ACT_LAYER_JIT, _ACT_LAYER_DEFAULT)
 for a in _ACT_LAYERS:
-    a.setdefault('hardsigmoid', a.get('hard_sigmoid'))
-    a.setdefault('hardswish', a.get('hard_swish'))
+    a.setdefault("hardsigmoid", a.get("hard_sigmoid"))
+    a.setdefault("hardswish", a.get("hard_swish"))
 
 
-def get_act_fn(name: Union[Callable, str] = 'relu'):
-    """ Activation Function Factory
+def get_act_fn(name: Union[Callable, str] = "relu"):
+    """Activation Function Factory
     Fetching activation fns by name with this function allows export or torch script friendly
     functions to be returned dynamically based on current config.
     """
@@ -122,8 +122,8 @@ def get_act_fn(name: Union[Callable, str] = 'relu'):
     return _ACT_FN_DEFAULT[name]
 
 
-def get_act_layer(name: Union[Type[nn.Module], str] = 'relu'):
-    """ Activation Layer Factory
+def get_act_layer(name: Union[Type[nn.Module], str] = "relu"):
+    """Activation Layer Factory
     Fetching activation layers by name with this function allows export or torch script friendly
     functions to be returned dynamically based on current config.
     """
@@ -145,4 +145,6 @@ def create_act_layer(name: Union[nn.Module, str], inplace=None, **kwargs):
     act_layer = get_act_layer(name)
     if act_layer is None:
         return None
-    return act_layer(**kwargs) if inplace is None else act_layer(inplace=inplace, **kwargs)
+    return (
+        act_layer(**kwargs) if inplace is None else act_layer(inplace=inplace, **kwargs)
+    )

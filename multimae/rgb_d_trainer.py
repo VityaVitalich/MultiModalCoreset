@@ -18,8 +18,10 @@ def masked_berhu_loss(preds, target, mask_valid=None):
         c = max(torch.abs(diff).max() * 0.2, 1e-5)
 
     l1_loss = torch.abs(diff)
-    l2_loss = (torch.square(diff) + c**2) / 2. / c
-    berhu_loss = l1_loss[torch.abs(diff) < c].sum() + l2_loss[torch.abs(diff) >= c].sum()
+    l2_loss = (torch.square(diff) + c**2) / 2.0 / c
+    berhu_loss = (
+        l1_loss[torch.abs(diff) < c].sum() + l2_loss[torch.abs(diff) >= c].sum()
+    )
 
     return berhu_loss / mask_valid.sum()
 
@@ -45,10 +47,10 @@ class RgbDepthTrainer(BaseTrainer):
         """
 
         ### TAKEN FROM NYU METRICS MULTIMAE https://github.com/EPFL-VILAB/MultiMAE/blob/main/run_finetuning_depth.py
-        # map to the original scale 
+        # map to the original scale
         # preds = preds * NYU_STD + NYU_MEAN
         # target = target * NYU_STD + NYU_MEAN
-        preds = model_outputs['depth']
+        preds = model_outputs["depth"]
         mask_valid = None
 
         if mask_valid is None:
@@ -57,24 +59,28 @@ class RgbDepthTrainer(BaseTrainer):
             mask_valid = mask_valid.repeat_interleave(preds.shape[1], 1)
 
         n = mask_valid.sum()
-        
+
         diff = torch.abs(preds - target)
         diff[~mask_valid] = 0
-        
-        max_rel = torch.maximum(preds/torch.clamp_min(target, 1e-6), target/torch.clamp_min(preds, 1e-6))
+
+        max_rel = torch.maximum(
+            preds / torch.clamp_min(target, 1e-6), target / torch.clamp_min(preds, 1e-6)
+        )
         max_rel = max_rel[mask_valid]
 
-        log_diff = torch.log(torch.clamp_min(preds, 1e-6)) - torch.log(torch.clamp_min(target, 1e-6))
+        log_diff = torch.log(torch.clamp_min(preds, 1e-6)) - torch.log(
+            torch.clamp_min(target, 1e-6)
+        )
         log_diff[~mask_valid] = 0
 
         metrics = {
-            'rmse': (diff.square().sum() / n).sqrt(),
-            'rel': (diff/torch.clamp_min(target, 1e-6))[mask_valid].mean(),
-            'srel': (diff**2/torch.clamp_min(target, 1e-6))[mask_valid].mean(),
-            'log10': (log_diff.square().sum() / n).sqrt(),
-            'delta_1': (max_rel < 1.25).float().mean(),
-            'delta_2': (max_rel < (1.25**2)).float().mean(),
-            'delta_3': (max_rel < (1.25**3)).float().mean(),
+            "rmse": (diff.square().sum() / n).sqrt(),
+            "rel": (diff / torch.clamp_min(target, 1e-6))[mask_valid].mean(),
+            "srel": (diff**2 / torch.clamp_min(target, 1e-6))[mask_valid].mean(),
+            "log10": (log_diff.square().sum() / n).sqrt(),
+            "delta_1": (max_rel < 1.25).float().mean(),
+            "delta_2": (max_rel < (1.25**2)).float().mean(),
+            "delta_3": (max_rel < (1.25**3)).float().mean(),
         }
         return metrics
 
@@ -91,7 +97,7 @@ class RgbDepthTrainer(BaseTrainer):
             model_output: raw model output as is.
             ground_truth: raw depth from dataloader.
         """
-        loss = masked_berhu_loss(preds=model_output['depth'], target=ground_truth)
+        loss = masked_berhu_loss(preds=model_output["depth"], target=ground_truth)
         return loss
 
     def log_metrics(

@@ -8,9 +8,17 @@ from .helpers import to_2tuple
 
 
 class Mlp(nn.Module):
-    """ MLP as used in Vision Transformer, MLP-Mixer and related networks
-    """
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, bias=True, drop=0.):
+    """MLP as used in Vision Transformer, MLP-Mixer and related networks"""
+
+    def __init__(
+        self,
+        in_features,
+        hidden_features=None,
+        out_features=None,
+        act_layer=nn.GELU,
+        bias=True,
+        drop=0.0,
+    ):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
@@ -33,10 +41,19 @@ class Mlp(nn.Module):
 
 
 class GluMlp(nn.Module):
-    """ MLP w/ GLU style gating
+    """MLP w/ GLU style gating
     See: https://arxiv.org/abs/1612.08083, https://arxiv.org/abs/2002.05202
     """
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.Sigmoid, bias=True, drop=0.):
+
+    def __init__(
+        self,
+        in_features,
+        hidden_features=None,
+        out_features=None,
+        act_layer=nn.Sigmoid,
+        bias=True,
+        drop=0.0,
+    ):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
@@ -67,11 +84,18 @@ class GluMlp(nn.Module):
 
 
 class GatedMlp(nn.Module):
-    """ MLP as used in gMLP
-    """
+    """MLP as used in gMLP"""
+
     def __init__(
-            self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU,
-            gate_layer=None, bias=True, drop=0.):
+        self,
+        in_features,
+        hidden_features=None,
+        out_features=None,
+        act_layer=nn.GELU,
+        gate_layer=None,
+        bias=True,
+        drop=0.0,
+    ):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
@@ -84,7 +108,9 @@ class GatedMlp(nn.Module):
         if gate_layer is not None:
             assert hidden_features % 2 == 0
             self.gate = gate_layer(hidden_features)
-            hidden_features = hidden_features // 2  # FIXME base reduction on gate property?
+            hidden_features = (
+                hidden_features // 2
+            )  # FIXME base reduction on gate property?
         else:
             self.gate = nn.Identity()
         self.fc2 = nn.Linear(hidden_features, out_features, bias=bias[1])
@@ -101,11 +127,18 @@ class GatedMlp(nn.Module):
 
 
 class ConvMlp(nn.Module):
-    """ MLP using 1x1 convs that keeps spatial dims
-    """
+    """MLP using 1x1 convs that keeps spatial dims"""
+
     def __init__(
-            self, in_features, hidden_features=None, out_features=None, act_layer=nn.ReLU,
-            norm_layer=None, bias=True, drop=0.):
+        self,
+        in_features,
+        hidden_features=None,
+        out_features=None,
+        act_layer=nn.ReLU,
+        norm_layer=None,
+        bias=True,
+        drop=0.0,
+    ):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features

@@ -22,18 +22,28 @@ def ImageNet(data_path):
     #         transforms.ToTensor(),
     #         normalize,
     #     ]))
-    dst_train = datasets.ImageFolder(root=os.path.join(data_path, 'train'), transform=transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            normalize,
-        ]))
-    dst_test = datasets.ImageFolder(root=os.path.join(data_path, 'val'), transform=transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            normalize,
-        ]))
+    dst_train = datasets.ImageFolder(
+        root=os.path.join(data_path, "train"),
+        transform=transforms.Compose(
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                normalize,
+            ]
+        ),
+    )
+    dst_test = datasets.ImageFolder(
+        root=os.path.join(data_path, "val"),
+        transform=transforms.Compose(
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                normalize,
+            ]
+        ),
+    )
     class_names = dst_train.classes
     dst_train.targets = tensor(dst_train.targets, dtype=long)
     dst_test.targets = tensor(dst_test.targets, dtype=long)

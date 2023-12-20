@@ -6,7 +6,7 @@ from timm.utils.model import freeze, unfreeze
 
 
 def test_freeze_unfreeze():
-    model = timm.create_model('resnet18')
+    model = timm.create_model("resnet18")
 
     # Freeze all
     freeze(model)
@@ -27,7 +27,7 @@ def test_freeze_unfreeze():
     assert isinstance(model.layer1[0].bn1, BatchNorm2d)
 
     # Freeze some
-    freeze(model, ['layer1', 'layer2.0'])
+    freeze(model, ["layer1", "layer2.0"])
     # Check frozen
     assert model.layer1[0].conv1.weight.requires_grad == False
     assert isinstance(model.layer1[0].bn1, FrozenBatchNorm2d)
@@ -38,7 +38,7 @@ def test_freeze_unfreeze():
     assert model.layer2[1].conv1.weight.requires_grad == True
 
     # Unfreeze some
-    unfreeze(model, ['layer1', 'layer2.0'])
+    unfreeze(model, ["layer1", "layer2.0"])
     # Check not frozen
     assert model.layer1[0].conv1.weight.requires_grad == True
     assert isinstance(model.layer1[0].bn1, BatchNorm2d)
@@ -46,12 +46,12 @@ def test_freeze_unfreeze():
 
     # Freeze/unfreeze BN
     # From root
-    freeze(model, ['layer1.0.bn1'])
+    freeze(model, ["layer1.0.bn1"])
     assert isinstance(model.layer1[0].bn1, FrozenBatchNorm2d)
-    unfreeze(model, ['layer1.0.bn1'])
+    unfreeze(model, ["layer1.0.bn1"])
     assert isinstance(model.layer1[0].bn1, BatchNorm2d)
     # From direct parent
-    freeze(model.layer1[0], ['bn1'])
-    assert isinstance(model.layer1[0].bn1, FrozenBatchNorm2d)    
-    unfreeze(model.layer1[0], ['bn1'])
+    freeze(model.layer1[0], ["bn1"])
+    assert isinstance(model.layer1[0].bn1, FrozenBatchNorm2d)
+    unfreeze(model.layer1[0], ["bn1"])
     assert isinstance(model.layer1[0].bn1, BatchNorm2d)

@@ -8,34 +8,38 @@ from .hub import load_model_config_from_hf
 
 
 def parse_model_name(model_name):
-    model_name = model_name.replace('hf_hub', 'hf-hub')  # NOTE for backwards compat, to deprecate hf_hub use
+    model_name = model_name.replace(
+        "hf_hub", "hf-hub"
+    )  # NOTE for backwards compat, to deprecate hf_hub use
     parsed = urlsplit(model_name)
-    assert parsed.scheme in ('', 'timm', 'hf-hub')
-    if parsed.scheme == 'hf-hub':
+    assert parsed.scheme in ("", "timm", "hf-hub")
+    if parsed.scheme == "hf-hub":
         # FIXME may use fragment as revision, currently `@` in URI path
         return parsed.scheme, parsed.path
     else:
         model_name = os.path.split(parsed.path)[-1]
-        return 'timm', model_name
+        return "timm", model_name
 
 
 def safe_model_name(model_name, remove_source=True):
     def make_safe(name):
-        return ''.join(c if c.isalnum() else '_' for c in name).rstrip('_')
+        return "".join(c if c.isalnum() else "_" for c in name).rstrip("_")
+
     if remove_source:
         model_name = parse_model_name(model_name)[-1]
     return make_safe(model_name)
 
 
 def create_model(
-        model_name,
-        pretrained=False,
-        pretrained_cfg=None,
-        checkpoint_path='',
-        scriptable=None,
-        exportable=None,
-        no_jit=None,
-        **kwargs):
+    model_name,
+    pretrained=False,
+    pretrained_cfg=None,
+    checkpoint_path="",
+    scriptable=None,
+    exportable=None,
+    no_jit=None,
+    **kwargs
+):
     """Create a model
 
     Args:
@@ -57,18 +61,20 @@ def create_model(
     kwargs = {k: v for k, v in kwargs.items() if v is not None}
 
     model_source, model_name = parse_model_name(model_name)
-    if model_source == 'hf-hub':
+    if model_source == "hf-hub":
         # FIXME hf-hub source overrides any passed in pretrained_cfg, warn?
         # For model names specified in the form `hf-hub:path/architecture_name@revision`,
         # load model weights + pretrained_cfg from Hugging Face hub.
         pretrained_cfg, model_name = load_model_config_from_hf(model_name)
 
     if not is_model(model_name):
-        raise RuntimeError('Unknown model (%s)' % model_name)
+        raise RuntimeError("Unknown model (%s)" % model_name)
 
     create_fn = model_entrypoint(model_name)
     with set_layer_config(scriptable=scriptable, exportable=exportable, no_jit=no_jit):
-        model = create_fn(pretrained=pretrained, pretrained_cfg=pretrained_cfg, **kwargs)
+        model = create_fn(
+            pretrained=pretrained, pretrained_cfg=pretrained_cfg, **kwargs
+        )
 
     if checkpoint_path:
         load_checkpoint(model, checkpoint_path)

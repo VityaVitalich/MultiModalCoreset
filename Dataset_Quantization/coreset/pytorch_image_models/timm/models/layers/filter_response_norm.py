@@ -34,16 +34,31 @@ class FilterResponseNormTlu2d(nn.Module):
             nn.init.zeros_(self.tau)
 
     def forward(self, x):
-        _assert(x.dim() == 4, 'expected 4D input')
+        _assert(x.dim() == 4, "expected 4D input")
         x_dtype = x.dtype
         v_shape = (1, -1, 1, 1)
         x = x * inv_instance_rms(x, self.eps)
-        x = x * self.weight.view(v_shape).to(dtype=x_dtype) + self.bias.view(v_shape).to(dtype=x_dtype)
-        return torch.maximum(x, self.tau.reshape(v_shape).to(dtype=x_dtype)) if self.tau is not None else x
+        x = x * self.weight.view(v_shape).to(dtype=x_dtype) + self.bias.view(
+            v_shape
+        ).to(dtype=x_dtype)
+        return (
+            torch.maximum(x, self.tau.reshape(v_shape).to(dtype=x_dtype))
+            if self.tau is not None
+            else x
+        )
 
 
 class FilterResponseNormAct2d(nn.Module):
-    def __init__(self, num_features, apply_act=True, act_layer=nn.ReLU, inplace=None, rms=True, eps=1e-5, **_):
+    def __init__(
+        self,
+        num_features,
+        apply_act=True,
+        act_layer=nn.ReLU,
+        inplace=None,
+        rms=True,
+        eps=1e-5,
+        **_
+    ):
         super(FilterResponseNormAct2d, self).__init__()
         if act_layer is not None and apply_act:
             self.act = create_act_layer(act_layer, inplace=inplace)
@@ -60,9 +75,11 @@ class FilterResponseNormAct2d(nn.Module):
         nn.init.zeros_(self.bias)
 
     def forward(self, x):
-        _assert(x.dim() == 4, 'expected 4D input')
+        _assert(x.dim() == 4, "expected 4D input")
         x_dtype = x.dtype
         v_shape = (1, -1, 1, 1)
         x = x * inv_instance_rms(x, self.eps)
-        x = x * self.weight.view(v_shape).to(dtype=x_dtype) + self.bias.view(v_shape).to(dtype=x_dtype)
+        x = x * self.weight.view(v_shape).to(dtype=x_dtype) + self.bias.view(
+            v_shape
+        ).to(dtype=x_dtype)
         return self.act(x)

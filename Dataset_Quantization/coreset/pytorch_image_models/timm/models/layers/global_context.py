@@ -17,22 +17,40 @@ from .norm import LayerNorm2d
 
 
 class GlobalContext(nn.Module):
-
-    def __init__(self, channels, use_attn=True, fuse_add=False, fuse_scale=True, init_last_zero=False,
-                 rd_ratio=1./8, rd_channels=None, rd_divisor=1, act_layer=nn.ReLU, gate_layer='sigmoid'):
+    def __init__(
+        self,
+        channels,
+        use_attn=True,
+        fuse_add=False,
+        fuse_scale=True,
+        init_last_zero=False,
+        rd_ratio=1.0 / 8,
+        rd_channels=None,
+        rd_divisor=1,
+        act_layer=nn.ReLU,
+        gate_layer="sigmoid",
+    ):
         super(GlobalContext, self).__init__()
         act_layer = get_act_layer(act_layer)
 
-        self.conv_attn = nn.Conv2d(channels, 1, kernel_size=1, bias=True) if use_attn else None
+        self.conv_attn = (
+            nn.Conv2d(channels, 1, kernel_size=1, bias=True) if use_attn else None
+        )
 
         if rd_channels is None:
-            rd_channels = make_divisible(channels * rd_ratio, rd_divisor, round_limit=0.)
+            rd_channels = make_divisible(
+                channels * rd_ratio, rd_divisor, round_limit=0.0
+            )
         if fuse_add:
-            self.mlp_add = ConvMlp(channels, rd_channels, act_layer=act_layer, norm_layer=LayerNorm2d)
+            self.mlp_add = ConvMlp(
+                channels, rd_channels, act_layer=act_layer, norm_layer=LayerNorm2d
+            )
         else:
             self.mlp_add = None
         if fuse_scale:
-            self.mlp_scale = ConvMlp(channels, rd_channels, act_layer=act_layer, norm_layer=LayerNorm2d)
+            self.mlp_scale = ConvMlp(
+                channels, rd_channels, act_layer=act_layer, norm_layer=LayerNorm2d
+            )
         else:
             self.mlp_scale = None
 
@@ -42,7 +60,9 @@ class GlobalContext(nn.Module):
 
     def reset_parameters(self):
         if self.conv_attn is not None:
-            nn.init.kaiming_normal_(self.conv_attn.weight, mode='fan_in', nonlinearity='relu')
+            nn.init.kaiming_normal_(
+                self.conv_attn.weight, mode="fan_in", nonlinearity="relu"
+            )
         if self.mlp_add is not None:
             nn.init.zeros_(self.mlp_add.fc2.weight)
 

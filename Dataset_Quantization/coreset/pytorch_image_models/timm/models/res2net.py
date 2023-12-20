@@ -15,45 +15,70 @@ from .resnet import ResNet
 __all__ = []
 
 
-def _cfg(url='', **kwargs):
+def _cfg(url="", **kwargs):
     return {
-        'url': url,
-        'num_classes': 1000, 'input_size': (3, 224, 224), 'pool_size': (7, 7),
-        'crop_pct': 0.875, 'interpolation': 'bilinear',
-        'mean': IMAGENET_DEFAULT_MEAN, 'std': IMAGENET_DEFAULT_STD,
-        'first_conv': 'conv1', 'classifier': 'fc',
-        **kwargs
+        "url": url,
+        "num_classes": 1000,
+        "input_size": (3, 224, 224),
+        "pool_size": (7, 7),
+        "crop_pct": 0.875,
+        "interpolation": "bilinear",
+        "mean": IMAGENET_DEFAULT_MEAN,
+        "std": IMAGENET_DEFAULT_STD,
+        "first_conv": "conv1",
+        "classifier": "fc",
+        **kwargs,
     }
 
 
 default_cfgs = {
-    'res2net50_26w_4s': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net50_26w_4s-06e79181.pth'),
-    'res2net50_48w_2s': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net50_48w_2s-afed724a.pth'),
-    'res2net50_14w_8s': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net50_14w_8s-6527dddc.pth'),
-    'res2net50_26w_6s': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net50_26w_6s-19041792.pth'),
-    'res2net50_26w_8s': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net50_26w_8s-2c7c9f12.pth'),
-    'res2net101_26w_4s': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net101_26w_4s-02a759a1.pth'),
-    'res2next50': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2next50_4s-6ef7e7bf.pth'),
+    "res2net50_26w_4s": _cfg(
+        url="https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net50_26w_4s-06e79181.pth"
+    ),
+    "res2net50_48w_2s": _cfg(
+        url="https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net50_48w_2s-afed724a.pth"
+    ),
+    "res2net50_14w_8s": _cfg(
+        url="https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net50_14w_8s-6527dddc.pth"
+    ),
+    "res2net50_26w_6s": _cfg(
+        url="https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net50_26w_6s-19041792.pth"
+    ),
+    "res2net50_26w_8s": _cfg(
+        url="https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net50_26w_8s-2c7c9f12.pth"
+    ),
+    "res2net101_26w_4s": _cfg(
+        url="https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net101_26w_4s-02a759a1.pth"
+    ),
+    "res2next50": _cfg(
+        url="https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2next50_4s-6ef7e7bf.pth"
+    ),
 }
 
 
 class Bottle2neck(nn.Module):
-    """ Res2Net/Res2NeXT Bottleneck
+    """Res2Net/Res2NeXT Bottleneck
     Adapted from https://github.com/gasvn/Res2Net/blob/master/res2net.py
     """
+
     expansion = 4
 
     def __init__(
-            self, inplanes, planes, stride=1, downsample=None,
-            cardinality=1, base_width=26, scale=4, dilation=1, first_dilation=None,
-            act_layer=nn.ReLU, norm_layer=None, attn_layer=None, **_):
+        self,
+        inplanes,
+        planes,
+        stride=1,
+        downsample=None,
+        cardinality=1,
+        base_width=26,
+        scale=4,
+        dilation=1,
+        first_dilation=None,
+        act_layer=nn.ReLU,
+        norm_layer=None,
+        attn_layer=None,
+        **_
+    ):
         super(Bottle2neck, self).__init__()
         self.scale = scale
         self.is_first = stride > 1 or downsample is not None
@@ -69,9 +94,18 @@ class Bottle2neck(nn.Module):
         convs = []
         bns = []
         for i in range(self.num_scales):
-            convs.append(nn.Conv2d(
-                width, width, kernel_size=3, stride=stride, padding=first_dilation,
-                dilation=first_dilation, groups=cardinality, bias=False))
+            convs.append(
+                nn.Conv2d(
+                    width,
+                    width,
+                    kernel_size=3,
+                    stride=stride,
+                    padding=first_dilation,
+                    dilation=first_dilation,
+                    groups=cardinality,
+                    bias=False,
+                )
+            )
             bns.append(norm_layer(width))
         self.convs = nn.ModuleList(convs)
         self.bns = nn.ModuleList(bns)
@@ -111,7 +145,9 @@ class Bottle2neck(nn.Module):
             sp = self.relu(sp)
             spo.append(sp)
         if self.scale > 1:
-            if self.pool is not None:  # self.is_first == True, None check for torchscript
+            if (
+                self.pool is not None
+            ):  # self.is_first == True, None check for torchscript
                 spo.append(self.pool(spx[-1]))
             else:
                 spo.append(spx[-1])
@@ -143,8 +179,13 @@ def res2net50_26w_4s(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model_args = dict(
-        block=Bottle2neck, layers=[3, 4, 6, 3], base_width=26, block_args=dict(scale=4), **kwargs)
-    return _create_res2net('res2net50_26w_4s', pretrained, **model_args)
+        block=Bottle2neck,
+        layers=[3, 4, 6, 3],
+        base_width=26,
+        block_args=dict(scale=4),
+        **kwargs
+    )
+    return _create_res2net("res2net50_26w_4s", pretrained, **model_args)
 
 
 @register_model
@@ -154,8 +195,13 @@ def res2net101_26w_4s(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model_args = dict(
-        block=Bottle2neck, layers=[3, 4, 23, 3], base_width=26, block_args=dict(scale=4), **kwargs)
-    return _create_res2net('res2net101_26w_4s', pretrained, **model_args)
+        block=Bottle2neck,
+        layers=[3, 4, 23, 3],
+        base_width=26,
+        block_args=dict(scale=4),
+        **kwargs
+    )
+    return _create_res2net("res2net101_26w_4s", pretrained, **model_args)
 
 
 @register_model
@@ -165,8 +211,13 @@ def res2net50_26w_6s(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model_args = dict(
-        block=Bottle2neck, layers=[3, 4, 6, 3], base_width=26, block_args=dict(scale=6), **kwargs)
-    return _create_res2net('res2net50_26w_6s', pretrained, **model_args)
+        block=Bottle2neck,
+        layers=[3, 4, 6, 3],
+        base_width=26,
+        block_args=dict(scale=6),
+        **kwargs
+    )
+    return _create_res2net("res2net50_26w_6s", pretrained, **model_args)
 
 
 @register_model
@@ -176,8 +227,13 @@ def res2net50_26w_8s(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model_args = dict(
-        block=Bottle2neck, layers=[3, 4, 6, 3], base_width=26, block_args=dict(scale=8), **kwargs)
-    return _create_res2net('res2net50_26w_8s', pretrained, **model_args)
+        block=Bottle2neck,
+        layers=[3, 4, 6, 3],
+        base_width=26,
+        block_args=dict(scale=8),
+        **kwargs
+    )
+    return _create_res2net("res2net50_26w_8s", pretrained, **model_args)
 
 
 @register_model
@@ -187,8 +243,13 @@ def res2net50_48w_2s(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model_args = dict(
-        block=Bottle2neck, layers=[3, 4, 6, 3], base_width=48, block_args=dict(scale=2), **kwargs)
-    return _create_res2net('res2net50_48w_2s', pretrained, **model_args)
+        block=Bottle2neck,
+        layers=[3, 4, 6, 3],
+        base_width=48,
+        block_args=dict(scale=2),
+        **kwargs
+    )
+    return _create_res2net("res2net50_48w_2s", pretrained, **model_args)
 
 
 @register_model
@@ -198,8 +259,13 @@ def res2net50_14w_8s(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model_args = dict(
-        block=Bottle2neck, layers=[3, 4, 6, 3], base_width=14, block_args=dict(scale=8), **kwargs)
-    return _create_res2net('res2net50_14w_8s', pretrained, **model_args)
+        block=Bottle2neck,
+        layers=[3, 4, 6, 3],
+        base_width=14,
+        block_args=dict(scale=8),
+        **kwargs
+    )
+    return _create_res2net("res2net50_14w_8s", pretrained, **model_args)
 
 
 @register_model
@@ -209,5 +275,11 @@ def res2next50(pretrained=False, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model_args = dict(
-        block=Bottle2neck, layers=[3, 4, 6, 3], base_width=4, cardinality=8, block_args=dict(scale=4), **kwargs)
-    return _create_res2net('res2next50', pretrained, **model_args)
+        block=Bottle2neck,
+        layers=[3, 4, 6, 3],
+        base_width=4,
+        cardinality=8,
+        block_args=dict(scale=4),
+        **kwargs
+    )
+    return _create_res2net("res2next50", pretrained, **model_args)

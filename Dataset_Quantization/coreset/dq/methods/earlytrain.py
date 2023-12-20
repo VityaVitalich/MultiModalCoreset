@@ -8,13 +8,24 @@ from torchvision import transforms
 
 
 class EarlyTrain(CoresetMethod):
-    '''
+    """
     Core code for training related to coreset selection methods when pre-training is required.
-    '''
+    """
 
-    def __init__(self, dst_train, args, fraction=0.5, random_seed=None, epochs=200, specific_model=None,
-                 torchvision_pretrain: bool = False, dst_pretrain_dict: dict = {}, fraction_pretrain=1., dst_test=None,
-                 **kwargs):
+    def __init__(
+        self,
+        dst_train,
+        args,
+        fraction=0.5,
+        random_seed=None,
+        epochs=200,
+        specific_model=None,
+        torchvision_pretrain: bool = False,
+        dst_pretrain_dict: dict = {},
+        fraction_pretrain=1.0,
+        dst_test=None,
+        **kwargs
+    ):
         super().__init__(dst_train, args, fraction, random_seed)
         self.epochs = epochs
         self.n_train = len(dst_train)
@@ -22,58 +33,89 @@ class EarlyTrain(CoresetMethod):
         self.coreset_size = round(fraction * self.n_train)
         self.specific_model = specific_model
 
-        if fraction_pretrain <= 0. or fraction_pretrain > 1.:
+        if fraction_pretrain <= 0.0 or fraction_pretrain > 1.0:
             raise ValueError("Illegal pretrain fraction value.")
         self.fraction_pretrain = fraction_pretrain
 
         if dst_pretrain_dict.__len__() != 0:
             dict_keys = dst_pretrain_dict.keys()
-            if 'im_size' not in dict_keys or 'channel' not in dict_keys or 'dst_train' not in dict_keys or \
-                    'num_classes' not in dict_keys:
+            if (
+                "im_size" not in dict_keys
+                or "channel" not in dict_keys
+                or "dst_train" not in dict_keys
+                or "num_classes" not in dict_keys
+            ):
                 raise AttributeError(
-                    'Argument dst_pretrain_dict must contain imszie, channel, dst_train and num_classes.')
-            if dst_pretrain_dict['im_size'][0] != args.im_size[0] or dst_pretrain_dict['im_size'][0] != args.im_size[0]:
-                raise ValueError("im_size of pretrain dataset does not match that of the training dataset.")
-            if dst_pretrain_dict['channel'] != args.channel:
-                raise ValueError("channel of pretrain dataset does not match that of the training dataset.")
-            if dst_pretrain_dict['num_classes'] != args.num_classes:
+                    "Argument dst_pretrain_dict must contain imszie, channel, dst_train and num_classes."
+                )
+            if (
+                dst_pretrain_dict["im_size"][0] != args.im_size[0]
+                or dst_pretrain_dict["im_size"][0] != args.im_size[0]
+            ):
+                raise ValueError(
+                    "im_size of pretrain dataset does not match that of the training dataset."
+                )
+            if dst_pretrain_dict["channel"] != args.channel:
+                raise ValueError(
+                    "channel of pretrain dataset does not match that of the training dataset."
+                )
+            if dst_pretrain_dict["num_classes"] != args.num_classes:
                 self.num_classes_mismatch()
 
         self.dst_pretrain_dict = dst_pretrain_dict
         self.torchvision_pretrain = torchvision_pretrain
-        self.if_dst_pretrain = (len(self.dst_pretrain_dict) != 0)
+        self.if_dst_pretrain = len(self.dst_pretrain_dict) != 0
 
         if torchvision_pretrain:
             # Pretrained models in torchvision only accept 224*224 inputs, therefore we resize current
             # datasets to 224*224.
             if args.im_size[0] != 224 or args.im_size[1] != 224:
                 self.dst_train = deepcopy(dst_train)
-                self.dst_train.dataset.transform = transforms.Compose([self.dst_train.dataset.transform, transforms.Resize(224)])
+                self.dst_train.dataset.transform = transforms.Compose(
+                    [self.dst_train.dataset.transform, transforms.Resize(224)]
+                )
                 if self.if_dst_pretrain:
-                    self.dst_pretrain_dict['dst_train'] = deepcopy(dst_pretrain_dict['dst_train'])
-                    self.dst_pretrain_dict['dst_train'].transform = transforms.Compose(
-                        [self.dst_pretrain_dict['dst_train'].transform, transforms.Resize(224)])
+                    self.dst_pretrain_dict["dst_train"] = deepcopy(
+                        dst_pretrain_dict["dst_train"]
+                    )
+                    self.dst_pretrain_dict["dst_train"].transform = transforms.Compose(
+                        [
+                            self.dst_pretrain_dict["dst_train"].transform,
+                            transforms.Resize(224),
+                        ]
+                    )
         if self.if_dst_pretrain:
-            self.n_pretrain = len(self.dst_pretrain_dict['dst_train'])
+            self.n_pretrain = len(self.dst_pretrain_dict["dst_train"])
         self.n_pretrain_size = round(
-            self.fraction_pretrain * (self.n_pretrain if self.if_dst_pretrain else self.n_train))
+            self.fraction_pretrain
+            * (self.n_pretrain if self.if_dst_pretrain else self.n_train)
+        )
         self.dst_test = dst_test
 
     def train(self, epoch, list_of_train_idx, **kwargs):
-        """ Train model for one epoch """
+        """Train model for one epoch"""
 
         self.before_train()
         self.model.train()
 
-        print('\n=> Training Epoch #%d' % epoch)
+        print("\n=> Training Epoch #%d" % epoch)
         trainset_permutation_inds = np.random.permutation(list_of_train_idx)
-        batch_sampler = torch.utils.data.BatchSampler(trainset_permutation_inds, batch_size=self.args.selection_batch,
-                                                      drop_last=False)
+        batch_sampler = torch.utils.data.BatchSampler(
+            trainset_permutation_inds,
+            batch_size=self.args.selection_batch,
+            drop_last=False,
+        )
         trainset_permutation_inds = list(batch_sampler)
 
-        train_loader = torch.utils.data.DataLoader(self.dst_pretrain_dict['dst_train'] if self.if_dst_pretrain
-                                                   else self.dst_train, shuffle=False, batch_sampler=batch_sampler,
-                                                   num_workers=self.args.workers, pin_memory=True)
+        train_loader = torch.utils.data.DataLoader(
+            self.dst_pretrain_dict["dst_train"]
+            if self.if_dst_pretrain
+            else self.dst_train,
+            shuffle=False,
+            batch_sampler=batch_sampler,
+            num_workers=self.args.workers,
+            pin_memory=True,
+        )
 
         for i, (inputs, targets) in enumerate(train_loader):
             inputs, targets = inputs.to(self.args.device), targets.to(self.args.device)
@@ -88,7 +130,9 @@ class EarlyTrain(CoresetMethod):
             # Update loss, backward propagate, update optimizer
             loss = loss.mean()
 
-            self.while_update(outputs, loss, targets, epoch, i, self.args.selection_batch)
+            self.while_update(
+                outputs, loss, targets, epoch, i, self.args.selection_batch
+            )
 
             loss.backward()
             self.model_optimizer.step()
@@ -100,16 +144,26 @@ class EarlyTrain(CoresetMethod):
         self.train_indx = np.arange(self.n_train)
 
         # Setup model and loss
-        self.model = nets.__dict__[self.args.model if self.specific_model is None else self.specific_model](
-            self.args.channel, self.dst_pretrain_dict["num_classes"] if self.if_dst_pretrain else self.num_classes,
+        self.model = nets.__dict__[
+            self.args.model if self.specific_model is None else self.specific_model
+        ](
+            self.args.channel,
+            self.dst_pretrain_dict["num_classes"]
+            if self.if_dst_pretrain
+            else self.num_classes,
             pretrained=self.torchvision_pretrain,
-            im_size=(224, 224) if self.torchvision_pretrain else self.args.im_size).to(self.args.device)
+            im_size=(224, 224) if self.torchvision_pretrain else self.args.im_size,
+        ).to(
+            self.args.device
+        )
 
         if self.args.device == "cpu":
             print("Using CPU.")
         elif self.args.gpu is not None:
             torch.cuda.set_device(self.args.gpu[0])
-            self.model = nets.nets_utils.MyDataParallel(self.model, device_ids=self.args.gpu)
+            self.model = nets.nets_utils.MyDataParallel(
+                self.model, device_ids=self.args.gpu
+            )
         elif torch.cuda.device_count() > 1:
             self.model = nets.nets_utils.MyDataParallel(self.model).cuda()
 
@@ -118,29 +172,43 @@ class EarlyTrain(CoresetMethod):
 
         # Setup optimizer
         if self.args.selection_optimizer == "SGD":
-            self.model_optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.selection_lr,
-                                                   momentum=self.args.selection_momentum,
-                                                   weight_decay=self.args.selection_weight_decay,
-                                                   nesterov=self.args.selection_nesterov)
+            self.model_optimizer = torch.optim.SGD(
+                self.model.parameters(),
+                lr=self.args.selection_lr,
+                momentum=self.args.selection_momentum,
+                weight_decay=self.args.selection_weight_decay,
+                nesterov=self.args.selection_nesterov,
+            )
         elif self.args.selection_optimizer == "Adam":
-            self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.selection_lr,
-                                                    weight_decay=self.args.selection_weight_decay)
+            self.model_optimizer = torch.optim.Adam(
+                self.model.parameters(),
+                lr=self.args.selection_lr,
+                weight_decay=self.args.selection_weight_decay,
+            )
         else:
-            self.model_optimizer = torch.optim.__dict__[self.args.selection_optimizer](self.model.parameters(),
-                                                                       lr=self.args.selection_lr,
-                                                                       momentum=self.args.selection_momentum,
-                                                                       weight_decay=self.args.selection_weight_decay,
-                                                                       nesterov=self.args.selection_nesterov)
+            self.model_optimizer = torch.optim.__dict__[self.args.selection_optimizer](
+                self.model.parameters(),
+                lr=self.args.selection_lr,
+                momentum=self.args.selection_momentum,
+                weight_decay=self.args.selection_weight_decay,
+                nesterov=self.args.selection_nesterov,
+            )
 
         self.before_run()
 
         for epoch in range(self.epochs):
-            list_of_train_idx = np.random.choice(np.arange(self.n_pretrain if self.if_dst_pretrain else self.n_train),
-                                                 self.n_pretrain_size, replace=False)
+            list_of_train_idx = np.random.choice(
+                np.arange(self.n_pretrain if self.if_dst_pretrain else self.n_train),
+                self.n_pretrain_size,
+                replace=False,
+            )
             self.before_epoch()
             self.train(epoch, list_of_train_idx)
-            if self.dst_test is not None and self.args.selection_test_interval > 0 and (
-                    epoch + 1) % self.args.selection_test_interval == 0:
+            if (
+                self.dst_test is not None
+                and self.args.selection_test_interval > 0
+                and (epoch + 1) % self.args.selection_test_interval == 0
+            ):
                 self.test(epoch)
             self.after_epoch()
 
@@ -150,17 +218,26 @@ class EarlyTrain(CoresetMethod):
         self.model.no_grad = True
         self.model.eval()
 
-        test_loader = torch.utils.data.DataLoader(self.dst_test if self.args.selection_test_fraction == 1. else
-                                                  torch.utils.data.Subset(self.dst_test, np.random.choice(
-                                                      np.arange(len(self.dst_test)),
-                                                      round(len(self.dst_test) * self.args.selection_test_fraction),
-                                                      replace=False)),
-                                                  batch_size=self.args.selection_batch, shuffle=False,
-                                                  num_workers=self.args.workers, pin_memory=True)
-        correct = 0.
-        total = 0.
+        test_loader = torch.utils.data.DataLoader(
+            self.dst_test
+            if self.args.selection_test_fraction == 1.0
+            else torch.utils.data.Subset(
+                self.dst_test,
+                np.random.choice(
+                    np.arange(len(self.dst_test)),
+                    round(len(self.dst_test) * self.args.selection_test_fraction),
+                    replace=False,
+                ),
+            ),
+            batch_size=self.args.selection_batch,
+            shuffle=False,
+            num_workers=self.args.workers,
+            pin_memory=True,
+        )
+        correct = 0.0
+        total = 0.0
 
-        print('\n=> Testing Epoch #%d' % epoch)
+        print("\n=> Testing Epoch #%d" % epoch)
 
         for batch_idx, (input, target) in enumerate(test_loader):
             output = self.model(input.to(self.args.device))
@@ -171,10 +248,23 @@ class EarlyTrain(CoresetMethod):
             total += target.size(0)
 
             if batch_idx % self.args.print_freq == 0:
-                print('| Test Epoch [%3d/%3d] Iter[%3d/%3d]\t\tTest Loss: %.4f Test Acc: %.3f%%' % (
-                    epoch, self.epochs, batch_idx + 1, (round(len(self.dst_test) * self.args.selection_test_fraction) //
-                                                        self.args.selection_batch) + 1, loss.item(),
-                    100. * correct / total))
+                print(
+                    "| Test Epoch [%3d/%3d] Iter[%3d/%3d]\t\tTest Loss: %.4f Test Acc: %.3f%%"
+                    % (
+                        epoch,
+                        self.epochs,
+                        batch_idx + 1,
+                        (
+                            round(
+                                len(self.dst_test) * self.args.selection_test_fraction
+                            )
+                            // self.args.selection_batch
+                        )
+                        + 1,
+                        loss.item(),
+                        100.0 * correct / total,
+                    )
+                )
 
         self.model.no_grad = False
 

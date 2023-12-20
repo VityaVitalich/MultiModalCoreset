@@ -12,8 +12,7 @@ from torch.nn import functional as F
 
 
 def swish(x, inplace: bool = False):
-    """Swish - Described in: https://arxiv.org/abs/1710.05941
-    """
+    """Swish - Described in: https://arxiv.org/abs/1710.05941"""
     return x.mul_(x.sigmoid()) if inplace else x.mul(x.sigmoid())
 
 
@@ -34,8 +33,8 @@ def mish(x, inplace: bool = False):
 
 
 class Mish(nn.Module):
-    """Mish: A Self Regularized Non-Monotonic Neural Activation Function - https://arxiv.org/abs/1908.08681
-    """
+    """Mish: A Self Regularized Non-Monotonic Neural Activation Function - https://arxiv.org/abs/1908.08681"""
+
     def __init__(self, inplace: bool = False):
         super(Mish, self).__init__()
 
@@ -72,7 +71,7 @@ class Tanh(nn.Module):
 
 
 def hard_swish(x, inplace: bool = False):
-    inner = F.relu6(x + 3.).div_(6.)
+    inner = F.relu6(x + 3.0).div_(6.0)
     return x.mul_(inner) if inplace else x.mul(inner)
 
 
@@ -87,9 +86,9 @@ class HardSwish(nn.Module):
 
 def hard_sigmoid(x, inplace: bool = False):
     if inplace:
-        return x.add_(3.).clamp_(0., 6.).div_(6.)
+        return x.add_(3.0).clamp_(0.0, 6.0).div_(6.0)
     else:
-        return F.relu6(x + 3.) / 6.
+        return F.relu6(x + 3.0) / 6.0
 
 
 class HardSigmoid(nn.Module):
@@ -102,7 +101,7 @@ class HardSigmoid(nn.Module):
 
 
 def hard_mish(x, inplace: bool = False):
-    """ Hard Mish
+    """Hard Mish
     Experimental, based on notes by Mish author Diganta Misra at
       https://github.com/digantamisra98/H-Mish/blob/0da20d4bc58e696b6803f2523c58d3c8a82782d0/README.md
     """
@@ -122,9 +121,11 @@ class HardMish(nn.Module):
 
 
 class PReLU(nn.PReLU):
-    """Applies PReLU (w/ dummy inplace arg)
-    """
-    def __init__(self, num_parameters: int = 1, init: float = 0.25, inplace: bool = False) -> None:
+    """Applies PReLU (w/ dummy inplace arg)"""
+
+    def __init__(
+        self, num_parameters: int = 1, init: float = 0.25, inplace: bool = False
+    ) -> None:
         super(PReLU, self).__init__(num_parameters=num_parameters, init=init)
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
@@ -136,8 +137,8 @@ def gelu(x: torch.Tensor, inplace: bool = False) -> torch.Tensor:
 
 
 class GELU(nn.Module):
-    """Applies the Gaussian Error Linear Units function (w/ dummy inplace arg)
-    """
+    """Applies the Gaussian Error Linear Units function (w/ dummy inplace arg)"""
+
     def __init__(self, inplace: bool = False):
         super(GELU, self).__init__()
 

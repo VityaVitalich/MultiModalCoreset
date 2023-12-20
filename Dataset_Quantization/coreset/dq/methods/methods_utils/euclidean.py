@@ -20,16 +20,24 @@ def euclidean_dist_pair(x):
     dist = dist.clamp(min=1e-12).sqrt()
     return dist
 
+
 def euclidean_dist_np(x, y):
     (rowx, colx) = x.shape
     (rowy, coly) = y.shape
     xy = np.dot(x, y.T)
-    x2 = np.repeat(np.reshape(np.sum(np.multiply(x, x), axis=1), (rowx, 1)), repeats=rowy, axis=1)
-    y2 = np.repeat(np.reshape(np.sum(np.multiply(y, y), axis=1), (rowy, 1)), repeats=rowx, axis=1).T
-    return np.sqrt(np.clip(x2 + y2 - 2. * xy, 1e-12, None))
+    x2 = np.repeat(
+        np.reshape(np.sum(np.multiply(x, x), axis=1), (rowx, 1)), repeats=rowy, axis=1
+    )
+    y2 = np.repeat(
+        np.reshape(np.sum(np.multiply(y, y), axis=1), (rowy, 1)), repeats=rowx, axis=1
+    ).T
+    return np.sqrt(np.clip(x2 + y2 - 2.0 * xy, 1e-12, None))
+
 
 def euclidean_dist_pair_np(x):
     (rowx, colx) = x.shape
     xy = np.dot(x, x.T)
-    x2 = np.repeat(np.reshape(np.sum(np.multiply(x, x), axis=1), (rowx, 1)), repeats=rowx, axis=1)
-    return np.sqrt(np.clip(x2 + x2.T - 2. * xy, 1e-12, None))
+    x2 = np.repeat(
+        np.reshape(np.sum(np.multiply(x, x), axis=1), (rowx, 1)), repeats=rowx, axis=1
+    )
+    return np.sqrt(np.clip(x2 + x2.T - 2.0 * xy, 1e-12, None))

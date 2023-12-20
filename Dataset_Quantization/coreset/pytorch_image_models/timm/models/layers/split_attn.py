@@ -31,24 +31,50 @@ class RadixSoftmax(nn.Module):
 
 
 class SplitAttn(nn.Module):
-    """Split-Attention (aka Splat)
-    """
-    def __init__(self, in_channels, out_channels=None, kernel_size=3, stride=1, padding=None,
-                 dilation=1, groups=1, bias=False, radix=2, rd_ratio=0.25, rd_channels=None, rd_divisor=8,
-                 act_layer=nn.ReLU, norm_layer=None, drop_layer=None, **kwargs):
+    """Split-Attention (aka Splat)"""
+
+    def __init__(
+        self,
+        in_channels,
+        out_channels=None,
+        kernel_size=3,
+        stride=1,
+        padding=None,
+        dilation=1,
+        groups=1,
+        bias=False,
+        radix=2,
+        rd_ratio=0.25,
+        rd_channels=None,
+        rd_divisor=8,
+        act_layer=nn.ReLU,
+        norm_layer=None,
+        drop_layer=None,
+        **kwargs
+    ):
         super(SplitAttn, self).__init__()
         out_channels = out_channels or in_channels
         self.radix = radix
         mid_chs = out_channels * radix
         if rd_channels is None:
-            attn_chs = make_divisible(in_channels * radix * rd_ratio, min_value=32, divisor=rd_divisor)
+            attn_chs = make_divisible(
+                in_channels * radix * rd_ratio, min_value=32, divisor=rd_divisor
+            )
         else:
             attn_chs = rd_channels * radix
 
         padding = kernel_size // 2 if padding is None else padding
         self.conv = nn.Conv2d(
-            in_channels, mid_chs, kernel_size, stride, padding, dilation,
-            groups=groups * radix, bias=bias, **kwargs)
+            in_channels,
+            mid_chs,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            groups=groups * radix,
+            bias=bias,
+            **kwargs
+        )
         self.bn0 = norm_layer(mid_chs) if norm_layer else nn.Identity()
         self.drop = drop_layer() if drop_layer is not None else nn.Identity()
         self.act0 = act_layer(inplace=True)
@@ -78,7 +104,9 @@ class SplitAttn(nn.Module):
 
         x_attn = self.rsoftmax(x_attn).view(B, -1, 1, 1)
         if self.radix > 1:
-            out = (x * x_attn.reshape((B, self.radix, RC // self.radix, 1, 1))).sum(dim=1)
+            out = (x * x_attn.reshape((B, self.radix, RC // self.radix, 1, 1))).sum(
+                dim=1
+            )
         else:
             out = x * x_attn
         return out.contiguous()

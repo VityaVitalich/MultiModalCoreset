@@ -55,6 +55,7 @@ def get_text(x):
     else:
         return x["instruction"] + " " + x["input"] + " " + x["output"]
 
+
 def merge_data(num_split=6):
     data = []
     for i in range(num_split):

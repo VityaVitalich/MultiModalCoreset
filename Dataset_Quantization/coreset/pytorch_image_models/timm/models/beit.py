@@ -33,40 +33,51 @@ from .registry import register_model
 from .vision_transformer import checkpoint_filter_fn
 
 
-def _cfg(url='', **kwargs):
+def _cfg(url="", **kwargs):
     return {
-        'url': url,
-        'num_classes': 1000, 'input_size': (3, 224, 224), 'pool_size': None,
-        'crop_pct': .9, 'interpolation': 'bicubic', 'fixed_input_size': True,
-        'mean': (0.5, 0.5, 0.5), 'std': (0.5, 0.5, 0.5),
-        'first_conv': 'patch_embed.proj', 'classifier': 'head',
-        **kwargs
+        "url": url,
+        "num_classes": 1000,
+        "input_size": (3, 224, 224),
+        "pool_size": None,
+        "crop_pct": 0.9,
+        "interpolation": "bicubic",
+        "fixed_input_size": True,
+        "mean": (0.5, 0.5, 0.5),
+        "std": (0.5, 0.5, 0.5),
+        "first_conv": "patch_embed.proj",
+        "classifier": "head",
+        **kwargs,
     }
 
 
 default_cfgs = {
-    'beit_base_patch16_224': _cfg(
-        url='https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_base_patch16_224_pt22k_ft22kto1k.pth'),
-    'beit_base_patch16_384': _cfg(
-        url='https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_base_patch16_384_pt22k_ft22kto1k.pth',
-        input_size=(3, 384, 384), crop_pct=1.0,
+    "beit_base_patch16_224": _cfg(
+        url="https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_base_patch16_224_pt22k_ft22kto1k.pth"
     ),
-    'beit_base_patch16_224_in22k': _cfg(
-        url='https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_base_patch16_224_pt22k_ft22k.pth',
+    "beit_base_patch16_384": _cfg(
+        url="https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_base_patch16_384_pt22k_ft22kto1k.pth",
+        input_size=(3, 384, 384),
+        crop_pct=1.0,
+    ),
+    "beit_base_patch16_224_in22k": _cfg(
+        url="https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_base_patch16_224_pt22k_ft22k.pth",
         num_classes=21841,
     ),
-    'beit_large_patch16_224': _cfg(
-        url='https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_large_patch16_224_pt22k_ft22kto1k.pth'),
-    'beit_large_patch16_384': _cfg(
-        url='https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_large_patch16_384_pt22k_ft22kto1k.pth',
-        input_size=(3, 384, 384), crop_pct=1.0,
+    "beit_large_patch16_224": _cfg(
+        url="https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_large_patch16_224_pt22k_ft22kto1k.pth"
     ),
-    'beit_large_patch16_512': _cfg(
-        url='https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_large_patch16_512_pt22k_ft22kto1k.pth',
-        input_size=(3, 512, 512), crop_pct=1.0,
+    "beit_large_patch16_384": _cfg(
+        url="https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_large_patch16_384_pt22k_ft22kto1k.pth",
+        input_size=(3, 384, 384),
+        crop_pct=1.0,
     ),
-    'beit_large_patch16_224_in22k': _cfg(
-        url='https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_large_patch16_224_pt22k_ft22k.pth',
+    "beit_large_patch16_512": _cfg(
+        url="https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_large_patch16_512_pt22k_ft22kto1k.pth",
+        input_size=(3, 512, 512),
+        crop_pct=1.0,
+    ),
+    "beit_large_patch16_224_in22k": _cfg(
+        url="https://conversationhub.blob.core.windows.net/beit-share-public/beit/beit_large_patch16_224_pt22k_ft22k.pth",
         num_classes=21841,
     ),
 }
@@ -77,16 +88,20 @@ def gen_relative_position_index(window_size: Tuple[int, int]) -> torch.Tensor:
     # cls to token & token 2 cls & cls to cls
     # get pair-wise relative position index for each token inside the window
     window_area = window_size[0] * window_size[1]
-    coords = torch.stack(torch.meshgrid(
-        [torch.arange(window_size[0]),
-         torch.arange(window_size[1])]))  # 2, Wh, Ww
+    coords = torch.stack(
+        torch.meshgrid([torch.arange(window_size[0]), torch.arange(window_size[1])])
+    )  # 2, Wh, Ww
     coords_flatten = torch.flatten(coords, 1)  # 2, Wh*Ww
-    relative_coords = coords_flatten[:, :, None] - coords_flatten[:, None, :]  # 2, Wh*Ww, Wh*Ww
+    relative_coords = (
+        coords_flatten[:, :, None] - coords_flatten[:, None, :]
+    )  # 2, Wh*Ww, Wh*Ww
     relative_coords = relative_coords.permute(1, 2, 0).contiguous()  # Wh*Ww, Wh*Ww, 2
     relative_coords[:, :, 0] += window_size[0] - 1  # shift to start from 0
     relative_coords[:, :, 1] += window_size[1] - 1
     relative_coords[:, :, 0] *= 2 * window_size[1] - 1
-    relative_position_index = torch.zeros(size=(window_area + 1,) * 2, dtype=relative_coords.dtype)
+    relative_position_index = torch.zeros(
+        size=(window_area + 1,) * 2, dtype=relative_coords.dtype
+    )
     relative_position_index[1:, 1:] = relative_coords.sum(-1)  # Wh*Ww, Wh*Ww
     relative_position_index[0, 0:] = num_relative_distance - 3
     relative_position_index[0:, 0] = num_relative_distance - 2
@@ -96,20 +111,27 @@ def gen_relative_position_index(window_size: Tuple[int, int]) -> torch.Tensor:
 
 class Attention(nn.Module):
     def __init__(
-            self, dim, num_heads=8, qkv_bias=False, attn_drop=0.,
-            proj_drop=0., window_size=None, attn_head_dim=None):
+        self,
+        dim,
+        num_heads=8,
+        qkv_bias=False,
+        attn_drop=0.0,
+        proj_drop=0.0,
+        window_size=None,
+        attn_head_dim=None,
+    ):
         super().__init__()
         self.num_heads = num_heads
         head_dim = dim // num_heads
         if attn_head_dim is not None:
             head_dim = attn_head_dim
         all_head_dim = head_dim * self.num_heads
-        self.scale = head_dim ** -0.5
+        self.scale = head_dim**-0.5
 
         self.qkv = nn.Linear(dim, all_head_dim * 3, bias=False)
         if qkv_bias:
             self.q_bias = nn.Parameter(torch.zeros(all_head_dim))
-            self.register_buffer('k_bias', torch.zeros(all_head_dim), persistent=False)
+            self.register_buffer("k_bias", torch.zeros(all_head_dim), persistent=False)
             self.v_bias = nn.Parameter(torch.zeros(all_head_dim))
         else:
             self.q_bias = None
@@ -118,10 +140,15 @@ class Attention(nn.Module):
 
         if window_size:
             self.window_size = window_size
-            self.num_relative_distance = (2 * window_size[0] - 1) * (2 * window_size[1] - 1) + 3
+            self.num_relative_distance = (2 * window_size[0] - 1) * (
+                2 * window_size[1] - 1
+            ) + 3
             self.relative_position_bias_table = nn.Parameter(
-                torch.zeros(self.num_relative_distance, num_heads))  # 2*Wh-1 * 2*Ww-1, nH
-            self.register_buffer("relative_position_index", gen_relative_position_index(window_size))
+                torch.zeros(self.num_relative_distance, num_heads)
+            )  # 2*Wh-1 * 2*Ww-1, nH
+            self.register_buffer(
+                "relative_position_index", gen_relative_position_index(window_size)
+            )
         else:
             self.window_size = None
             self.relative_position_bias_table = None
@@ -133,22 +160,31 @@ class Attention(nn.Module):
 
     def _get_rel_pos_bias(self):
         relative_position_bias = self.relative_position_bias_table[
-            self.relative_position_index.view(-1)].view(
+            self.relative_position_index.view(-1)
+        ].view(
             self.window_size[0] * self.window_size[1] + 1,
-            self.window_size[0] * self.window_size[1] + 1, -1)  # Wh*Ww,Wh*Ww,nH
-        relative_position_bias = relative_position_bias.permute(2, 0, 1).contiguous()  # nH, Wh*Ww, Wh*Ww
+            self.window_size[0] * self.window_size[1] + 1,
+            -1,
+        )  # Wh*Ww,Wh*Ww,nH
+        relative_position_bias = relative_position_bias.permute(
+            2, 0, 1
+        ).contiguous()  # nH, Wh*Ww, Wh*Ww
         return relative_position_bias.unsqueeze(0)
 
     def forward(self, x, shared_rel_pos_bias: Optional[torch.Tensor] = None):
         B, N, C = x.shape
 
-        qkv_bias = torch.cat((self.q_bias, self.k_bias, self.v_bias)) if self.q_bias is not None else None
+        qkv_bias = (
+            torch.cat((self.q_bias, self.k_bias, self.v_bias))
+            if self.q_bias is not None
+            else None
+        )
         qkv = F.linear(input=x, weight=self.qkv.weight, bias=qkv_bias)
         qkv = qkv.reshape(B, N, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)  # make torchscript happy (cannot use tensor as tuple)
 
         q = q * self.scale
-        attn = (q @ k.transpose(-2, -1))
+        attn = q @ k.transpose(-2, -1)
 
         if self.relative_position_bias_table is not None:
             attn = attn + self._get_rel_pos_bias()
@@ -165,105 +201,185 @@ class Attention(nn.Module):
 
 
 class Block(nn.Module):
-
     def __init__(
-            self, dim, num_heads, mlp_ratio=4., qkv_bias=False, drop=0., attn_drop=0.,
-            drop_path=0., init_values=None, act_layer=nn.GELU, norm_layer=nn.LayerNorm,
-            window_size=None, attn_head_dim=None):
+        self,
+        dim,
+        num_heads,
+        mlp_ratio=4.0,
+        qkv_bias=False,
+        drop=0.0,
+        attn_drop=0.0,
+        drop_path=0.0,
+        init_values=None,
+        act_layer=nn.GELU,
+        norm_layer=nn.LayerNorm,
+        window_size=None,
+        attn_head_dim=None,
+    ):
         super().__init__()
         self.norm1 = norm_layer(dim)
         self.attn = Attention(
-            dim, num_heads=num_heads, qkv_bias=qkv_bias, attn_drop=attn_drop, proj_drop=drop,
-            window_size=window_size, attn_head_dim=attn_head_dim)
+            dim,
+            num_heads=num_heads,
+            qkv_bias=qkv_bias,
+            attn_drop=attn_drop,
+            proj_drop=drop,
+            window_size=window_size,
+            attn_head_dim=attn_head_dim,
+        )
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+        self.mlp = Mlp(
+            in_features=dim,
+            hidden_features=mlp_hidden_dim,
+            act_layer=act_layer,
+            drop=drop,
+        )
 
         if init_values:
-            self.gamma_1 = nn.Parameter(init_values * torch.ones(dim), requires_grad=True)
-            self.gamma_2 = nn.Parameter(init_values * torch.ones(dim), requires_grad=True)
+            self.gamma_1 = nn.Parameter(
+                init_values * torch.ones(dim), requires_grad=True
+            )
+            self.gamma_2 = nn.Parameter(
+                init_values * torch.ones(dim), requires_grad=True
+            )
         else:
             self.gamma_1, self.gamma_2 = None, None
 
     def forward(self, x, shared_rel_pos_bias: Optional[torch.Tensor] = None):
         if self.gamma_1 is None:
-            x = x + self.drop_path(self.attn(self.norm1(x), shared_rel_pos_bias=shared_rel_pos_bias))
+            x = x + self.drop_path(
+                self.attn(self.norm1(x), shared_rel_pos_bias=shared_rel_pos_bias)
+            )
             x = x + self.drop_path(self.mlp(self.norm2(x)))
         else:
-            x = x + self.drop_path(self.gamma_1 * self.attn(self.norm1(x), shared_rel_pos_bias=shared_rel_pos_bias))
+            x = x + self.drop_path(
+                self.gamma_1
+                * self.attn(self.norm1(x), shared_rel_pos_bias=shared_rel_pos_bias)
+            )
             x = x + self.drop_path(self.gamma_2 * self.mlp(self.norm2(x)))
         return x
 
 
 class RelativePositionBias(nn.Module):
-
     def __init__(self, window_size, num_heads):
         super().__init__()
         self.window_size = window_size
         self.window_area = window_size[0] * window_size[1]
         num_relative_distance = (2 * window_size[0] - 1) * (2 * window_size[1] - 1) + 3
-        self.relative_position_bias_table = nn.Parameter(torch.zeros(num_relative_distance, num_heads))
+        self.relative_position_bias_table = nn.Parameter(
+            torch.zeros(num_relative_distance, num_heads)
+        )
         # trunc_normal_(self.relative_position_bias_table, std=.02)
-        self.register_buffer("relative_position_index", gen_relative_position_index(window_size))
+        self.register_buffer(
+            "relative_position_index", gen_relative_position_index(window_size)
+        )
 
     def forward(self):
-        relative_position_bias = self.relative_position_bias_table[self.relative_position_index.view(-1)].view(
-            self.window_area + 1, self.window_area + 1, -1)  # Wh*Ww,Wh*Ww,nH
+        relative_position_bias = self.relative_position_bias_table[
+            self.relative_position_index.view(-1)
+        ].view(
+            self.window_area + 1, self.window_area + 1, -1
+        )  # Wh*Ww,Wh*Ww,nH
         return relative_position_bias.permute(2, 0, 1).contiguous()  # nH, Wh*Ww, Wh*Ww
 
 
 class Beit(nn.Module):
-    """ Vision Transformer with support for patch or hybrid CNN input stage
-    """
+    """Vision Transformer with support for patch or hybrid CNN input stage"""
 
     def __init__(
-            self, img_size=224, patch_size=16, in_chans=3, num_classes=1000, global_pool='avg',
-            embed_dim=768, depth=12, num_heads=12, mlp_ratio=4., qkv_bias=True, drop_rate=0.,
-            attn_drop_rate=0., drop_path_rate=0., norm_layer=partial(nn.LayerNorm, eps=1e-6),
-            init_values=None, use_abs_pos_emb=True, use_rel_pos_bias=False, use_shared_rel_pos_bias=False,
-            head_init_scale=0.001):
+        self,
+        img_size=224,
+        patch_size=16,
+        in_chans=3,
+        num_classes=1000,
+        global_pool="avg",
+        embed_dim=768,
+        depth=12,
+        num_heads=12,
+        mlp_ratio=4.0,
+        qkv_bias=True,
+        drop_rate=0.0,
+        attn_drop_rate=0.0,
+        drop_path_rate=0.0,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),
+        init_values=None,
+        use_abs_pos_emb=True,
+        use_rel_pos_bias=False,
+        use_shared_rel_pos_bias=False,
+        head_init_scale=0.001,
+    ):
         super().__init__()
         self.num_classes = num_classes
         self.global_pool = global_pool
-        self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
+        self.num_features = (
+            self.embed_dim
+        ) = embed_dim  # num_features for consistency with other models
         self.grad_checkpointing = False
 
         self.patch_embed = PatchEmbed(
-            img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
+            img_size=img_size,
+            patch_size=patch_size,
+            in_chans=in_chans,
+            embed_dim=embed_dim,
+        )
         num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         # self.mask_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim)) if use_abs_pos_emb else None
+        self.pos_embed = (
+            nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+            if use_abs_pos_emb
+            else None
+        )
         self.pos_drop = nn.Dropout(p=drop_rate)
 
         if use_shared_rel_pos_bias:
-            self.rel_pos_bias = RelativePositionBias(window_size=self.patch_embed.grid_size, num_heads=num_heads)
+            self.rel_pos_bias = RelativePositionBias(
+                window_size=self.patch_embed.grid_size, num_heads=num_heads
+            )
         else:
             self.rel_pos_bias = None
 
-        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
-        self.blocks = nn.ModuleList([
-            Block(
-                dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
-                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer,
-                init_values=init_values, window_size=self.patch_embed.grid_size if use_rel_pos_bias else None)
-            for i in range(depth)])
-        use_fc_norm = self.global_pool == 'avg'
+        dpr = [
+            x.item() for x in torch.linspace(0, drop_path_rate, depth)
+        ]  # stochastic depth decay rule
+        self.blocks = nn.ModuleList(
+            [
+                Block(
+                    dim=embed_dim,
+                    num_heads=num_heads,
+                    mlp_ratio=mlp_ratio,
+                    qkv_bias=qkv_bias,
+                    drop=drop_rate,
+                    attn_drop=attn_drop_rate,
+                    drop_path=dpr[i],
+                    norm_layer=norm_layer,
+                    init_values=init_values,
+                    window_size=self.patch_embed.grid_size
+                    if use_rel_pos_bias
+                    else None,
+                )
+                for i in range(depth)
+            ]
+        )
+        use_fc_norm = self.global_pool == "avg"
         self.norm = nn.Identity() if use_fc_norm else norm_layer(embed_dim)
         self.fc_norm = norm_layer(embed_dim) if use_fc_norm else None
-        self.head = nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+        self.head = (
+            nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+        )
 
         self.apply(self._init_weights)
         if self.pos_embed is not None:
-            trunc_normal_(self.pos_embed, std=.02)
-        trunc_normal_(self.cls_token, std=.02)
+            trunc_normal_(self.pos_embed, std=0.02)
+        trunc_normal_(self.cls_token, std=0.02)
         # trunc_normal_(self.mask_token, std=.02)
         self.fix_init_weight()
         if isinstance(self.head, nn.Linear):
-            trunc_normal_(self.head.weight, std=.02)
+            trunc_normal_(self.head.weight, std=0.02)
             self.head.weight.data.mul_(head_init_scale)
             self.head.bias.data.mul_(head_init_scale)
 
@@ -277,7 +393,7 @@ class Beit(nn.Module):
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
+            trunc_normal_(m.weight, std=0.02)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.LayerNorm):
@@ -286,9 +402,9 @@ class Beit(nn.Module):
 
     @torch.jit.ignore
     def no_weight_decay(self):
-        nwd = {'pos_embed', 'cls_token'}
+        nwd = {"pos_embed", "cls_token"}
         for n, _ in self.named_parameters():
-            if 'relative_position_bias_table' in n:
+            if "relative_position_bias_table" in n:
                 nwd.add(n)
         return nwd
 
@@ -299,8 +415,8 @@ class Beit(nn.Module):
     @torch.jit.ignore
     def group_matcher(self, coarse=False):
         matcher = dict(
-            stem=r'^cls_token|pos_embed|patch_embed|rel_pos_bias',  # stem and embed
-            blocks=[(r'^blocks\.(\d+)', None), (r'^norm', (99999,))],
+            stem=r"^cls_token|pos_embed|patch_embed|rel_pos_bias",  # stem and embed
+            blocks=[(r"^blocks\.(\d+)", None), (r"^norm", (99999,))],
         )
         return matcher
 
@@ -312,7 +428,9 @@ class Beit(nn.Module):
         self.num_classes = num_classes
         if global_pool is not None:
             self.global_pool = global_pool
-        self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+        self.head = (
+            nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+        )
 
     def forward_features(self, x):
         x = self.patch_embed(x)
@@ -345,75 +463,151 @@ class Beit(nn.Module):
 
 
 def _create_beit(variant, pretrained=False, **kwargs):
-    if kwargs.get('features_only', None):
-        raise RuntimeError('features_only not implemented for Beit models.')
+    if kwargs.get("features_only", None):
+        raise RuntimeError("features_only not implemented for Beit models.")
 
     model = build_model_with_cfg(
-        Beit, variant, pretrained,
+        Beit,
+        variant,
+        pretrained,
         # FIXME an updated filter fn needed to interpolate rel pos emb if fine tuning to diff model sizes
         pretrained_filter_fn=checkpoint_filter_fn,
-        **kwargs)
+        **kwargs
+    )
     return model
 
 
 @register_model
 def beit_base_patch16_224(pretrained=False, **kwargs):
     model_kwargs = dict(
-        patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=0.1, **kwargs)
-    model = _create_beit('beit_base_patch16_224', pretrained=pretrained, **model_kwargs)
+        patch_size=16,
+        embed_dim=768,
+        depth=12,
+        num_heads=12,
+        mlp_ratio=4,
+        use_abs_pos_emb=False,
+        use_rel_pos_bias=True,
+        init_values=0.1,
+        **kwargs
+    )
+    model = _create_beit("beit_base_patch16_224", pretrained=pretrained, **model_kwargs)
     return model
 
 
 @register_model
 def beit_base_patch16_384(pretrained=False, **kwargs):
     model_kwargs = dict(
-        img_size=384, patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=0.1, **kwargs)
-    model = _create_beit('beit_base_patch16_384', pretrained=pretrained, **model_kwargs)
+        img_size=384,
+        patch_size=16,
+        embed_dim=768,
+        depth=12,
+        num_heads=12,
+        mlp_ratio=4,
+        use_abs_pos_emb=False,
+        use_rel_pos_bias=True,
+        init_values=0.1,
+        **kwargs
+    )
+    model = _create_beit("beit_base_patch16_384", pretrained=pretrained, **model_kwargs)
     return model
 
 
 @register_model
 def beit_base_patch16_224_in22k(pretrained=False, **kwargs):
     model_kwargs = dict(
-        patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=0.1, **kwargs)
-    model = _create_beit('beit_base_patch16_224_in22k', pretrained=pretrained, **model_kwargs)
+        patch_size=16,
+        embed_dim=768,
+        depth=12,
+        num_heads=12,
+        mlp_ratio=4,
+        use_abs_pos_emb=False,
+        use_rel_pos_bias=True,
+        init_values=0.1,
+        **kwargs
+    )
+    model = _create_beit(
+        "beit_base_patch16_224_in22k", pretrained=pretrained, **model_kwargs
+    )
     return model
 
 
 @register_model
 def beit_large_patch16_224(pretrained=False, **kwargs):
     model_kwargs = dict(
-        patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5,  **kwargs)
-    model = _create_beit('beit_large_patch16_224', pretrained=pretrained, **model_kwargs)
+        patch_size=16,
+        embed_dim=1024,
+        depth=24,
+        num_heads=16,
+        mlp_ratio=4,
+        qkv_bias=True,
+        use_abs_pos_emb=False,
+        use_rel_pos_bias=True,
+        init_values=1e-5,
+        **kwargs
+    )
+    model = _create_beit(
+        "beit_large_patch16_224", pretrained=pretrained, **model_kwargs
+    )
     return model
 
 
 @register_model
 def beit_large_patch16_384(pretrained=False, **kwargs):
     model_kwargs = dict(
-        img_size=384, patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5, **kwargs)
-    model = _create_beit('beit_large_patch16_384', pretrained=pretrained, **model_kwargs)
+        img_size=384,
+        patch_size=16,
+        embed_dim=1024,
+        depth=24,
+        num_heads=16,
+        mlp_ratio=4,
+        qkv_bias=True,
+        use_abs_pos_emb=False,
+        use_rel_pos_bias=True,
+        init_values=1e-5,
+        **kwargs
+    )
+    model = _create_beit(
+        "beit_large_patch16_384", pretrained=pretrained, **model_kwargs
+    )
     return model
 
 
 @register_model
 def beit_large_patch16_512(pretrained=False, **kwargs):
     model_kwargs = dict(
-        img_size=512, patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5, **kwargs)
-    model = _create_beit('beit_large_patch16_512', pretrained=pretrained, **model_kwargs)
+        img_size=512,
+        patch_size=16,
+        embed_dim=1024,
+        depth=24,
+        num_heads=16,
+        mlp_ratio=4,
+        qkv_bias=True,
+        use_abs_pos_emb=False,
+        use_rel_pos_bias=True,
+        init_values=1e-5,
+        **kwargs
+    )
+    model = _create_beit(
+        "beit_large_patch16_512", pretrained=pretrained, **model_kwargs
+    )
     return model
 
 
 @register_model
 def beit_large_patch16_224_in22k(pretrained=False, **kwargs):
     model_kwargs = dict(
-        patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5,  **kwargs)
-    model = _create_beit('beit_large_patch16_224_in22k', pretrained=pretrained, **model_kwargs)
+        patch_size=16,
+        embed_dim=1024,
+        depth=24,
+        num_heads=16,
+        mlp_ratio=4,
+        qkv_bias=True,
+        use_abs_pos_emb=False,
+        use_rel_pos_bias=True,
+        init_values=1e-5,
+        **kwargs
+    )
+    model = _create_beit(
+        "beit_large_patch16_224_in22k", pretrained=pretrained, **model_kwargs
+    )
     return model

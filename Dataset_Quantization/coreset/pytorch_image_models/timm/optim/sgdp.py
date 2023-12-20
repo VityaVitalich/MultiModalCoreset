@@ -17,11 +17,28 @@ from .adamp import projection
 
 
 class SGDP(Optimizer):
-    def __init__(self, params, lr=required, momentum=0, dampening=0,
-                 weight_decay=0, nesterov=False, eps=1e-8, delta=0.1, wd_ratio=0.1):
+    def __init__(
+        self,
+        params,
+        lr=required,
+        momentum=0,
+        dampening=0,
+        weight_decay=0,
+        nesterov=False,
+        eps=1e-8,
+        delta=0.1,
+        wd_ratio=0.1,
+    ):
         defaults = dict(
-            lr=lr, momentum=momentum, dampening=dampening, weight_decay=weight_decay,
-            nesterov=nesterov, eps=eps, delta=delta, wd_ratio=wd_ratio)
+            lr=lr,
+            momentum=momentum,
+            dampening=dampening,
+            weight_decay=weight_decay,
+            nesterov=nesterov,
+            eps=eps,
+            delta=delta,
+            wd_ratio=wd_ratio,
+        )
         super(SGDP, self).__init__(params, defaults)
 
     @torch.no_grad()
@@ -32,12 +49,12 @@ class SGDP(Optimizer):
                 loss = closure()
 
         for group in self.param_groups:
-            weight_decay = group['weight_decay']
-            momentum = group['momentum']
-            dampening = group['dampening']
-            nesterov = group['nesterov']
+            weight_decay = group["weight_decay"]
+            momentum = group["momentum"]
+            dampening = group["dampening"]
+            nesterov = group["nesterov"]
 
-            for p in group['params']:
+            for p in group["params"]:
                 if p.grad is None:
                     continue
                 grad = p.grad
@@ -45,26 +62,34 @@ class SGDP(Optimizer):
 
                 # State initialization
                 if len(state) == 0:
-                    state['momentum'] = torch.zeros_like(p)
+                    state["momentum"] = torch.zeros_like(p)
 
                 # SGD
-                buf = state['momentum']
-                buf.mul_(momentum).add_(grad, alpha=1. - dampening)
+                buf = state["momentum"]
+                buf.mul_(momentum).add_(grad, alpha=1.0 - dampening)
                 if nesterov:
                     d_p = grad + momentum * buf
                 else:
                     d_p = buf
 
                 # Projection
-                wd_ratio = 1.
+                wd_ratio = 1.0
                 if len(p.shape) > 1:
-                    d_p, wd_ratio = projection(p, grad, d_p, group['delta'], group['wd_ratio'], group['eps'])
+                    d_p, wd_ratio = projection(
+                        p, grad, d_p, group["delta"], group["wd_ratio"], group["eps"]
+                    )
 
                 # Weight decay
                 if weight_decay != 0:
-                    p.mul_(1. - group['lr'] * group['weight_decay'] * wd_ratio / (1-momentum))
+                    p.mul_(
+                        1.0
+                        - group["lr"]
+                        * group["weight_decay"]
+                        * wd_ratio
+                        / (1 - momentum)
+                    )
 
                 # Step
-                p.add_(d_p, alpha=-group['lr'])
+                p.add_(d_p, alpha=-group["lr"])
 
         return loss

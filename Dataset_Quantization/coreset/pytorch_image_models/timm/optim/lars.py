@@ -15,8 +15,8 @@ from torch.optim.optimizer import Optimizer
 
 
 class Lars(Optimizer):
-    """ LARS for PyTorch
-    
+    """LARS for PyTorch
+
     Paper: `Large batch training of Convolutional Networks` - https://arxiv.org/pdf/1708.03888.pdf
 
     Args:
@@ -84,52 +84,60 @@ class Lars(Optimizer):
             with torch.enable_grad():
                 loss = closure()
 
-        device = self.param_groups[0]['params'][0].device
-        one_tensor = torch.tensor(1.0, device=device)  # because torch.where doesn't handle scalars correctly
+        device = self.param_groups[0]["params"][0].device
+        one_tensor = torch.tensor(
+            1.0, device=device
+        )  # because torch.where doesn't handle scalars correctly
 
         for group in self.param_groups:
-            weight_decay = group['weight_decay']
-            momentum = group['momentum']
-            dampening = group['dampening']
-            nesterov = group['nesterov']
-            trust_coeff = group['trust_coeff']
-            eps = group['eps']
+            weight_decay = group["weight_decay"]
+            momentum = group["momentum"]
+            dampening = group["dampening"]
+            nesterov = group["nesterov"]
+            trust_coeff = group["trust_coeff"]
+            eps = group["eps"]
 
-            for p in group['params']:
+            for p in group["params"]:
                 if p.grad is None:
                     continue
                 grad = p.grad
 
                 # apply LARS LR adaptation, LARC clipping, weight decay
                 # ref: https://github.com/NVIDIA/apex/blob/master/apex/parallel/LARC.py
-                if weight_decay != 0 or group['always_adapt']:
+                if weight_decay != 0 or group["always_adapt"]:
                     w_norm = p.norm(2.0)
                     g_norm = grad.norm(2.0)
-                    trust_ratio = trust_coeff * w_norm / (g_norm + w_norm * weight_decay + eps)
+                    trust_ratio = (
+                        trust_coeff * w_norm / (g_norm + w_norm * weight_decay + eps)
+                    )
                     # FIXME nested where required since logical and/or not working in PT XLA
                     trust_ratio = torch.where(
                         w_norm > 0,
                         torch.where(g_norm > 0, trust_ratio, one_tensor),
                         one_tensor,
                     )
-                    if group['trust_clip']:
-                        trust_ratio = torch.minimum(trust_ratio / group['lr'], one_tensor)
+                    if group["trust_clip"]:
+                        trust_ratio = torch.minimum(
+                            trust_ratio / group["lr"], one_tensor
+                        )
                     grad.add_(p, alpha=weight_decay)
                     grad.mul_(trust_ratio)
 
                 # apply SGD update https://github.com/pytorch/pytorch/blob/1.7/torch/optim/sgd.py#L100
                 if momentum != 0:
                     param_state = self.state[p]
-                    if 'momentum_buffer' not in param_state:
-                        buf = param_state['momentum_buffer'] = torch.clone(grad).detach()
+                    if "momentum_buffer" not in param_state:
+                        buf = param_state["momentum_buffer"] = torch.clone(
+                            grad
+                        ).detach()
                     else:
-                        buf = param_state['momentum_buffer']
-                        buf.mul_(momentum).add_(grad, alpha=1. - dampening)
+                        buf = param_state["momentum_buffer"]
+                        buf.mul_(momentum).add_(grad, alpha=1.0 - dampening)
                     if nesterov:
                         grad = grad.add(buf, alpha=momentum)
                     else:
                         grad = buf
 
-                p.add_(grad, alpha=-group['lr'])
+                p.add_(grad, alpha=-group["lr"])
 
         return loss
