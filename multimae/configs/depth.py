@@ -4,18 +4,18 @@ import ml_collections
 def depth_configs():
     config = ml_collections.ConfigDict()
 
-    config.run_name = "test-multi"
+    config.run_name = "test-rgb-semseg"
     config.log_dir = "./logs/"
-    config.cons_lvl = "DEBUG"
-    config.file_lvl = "DEBUG"
+    config.cons_lvl = "INFO"
+    config.file_lvl = "INFO"
 
     config.device = "cuda"
 
-    config.in_domains = ["rgb"]
+    config.in_domains = ["rgb", 'semseg']
     config.out_domains = ["depth"]
-    config.decoder_main_tasks = ["rgb"]
+    config.decoder_main_tasks = ["rgb", 'semseg']
 
-    config.semseg_num_classes = 255
+    config.semseg_num_classes = 256
 
     config.patch_size = 16
     config.input_size = 224
@@ -25,7 +25,7 @@ def depth_configs():
     config.lr = 3e-4
     config.weight_decay = 1e-4
     config.total_epochs = 1
-    config.batch_size = 32
+    config.batch_size = 64
 
     config.train_dir = "../../data/dq/clevr_complex/train"
     config.val_dir = "../../data/dq/clevr_complex/val"

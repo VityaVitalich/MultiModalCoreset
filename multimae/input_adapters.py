@@ -277,5 +277,4 @@ class SemSegInputAdapter(nn.Module):
         # Add patches and positional embeddings
         x = x_patch + x_pos_emb
 
-        print(x.size())
         return x

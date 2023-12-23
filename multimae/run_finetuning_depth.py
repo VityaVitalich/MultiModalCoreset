@@ -77,7 +77,7 @@ if __name__ == "__main__":
                 num_classes=config.semseg_num_classes,
                 dim_class_emb=32,
                 interpolate_class_emb=False,
-                emb_padding_idx=config.semseg_num_classes + 1,
+                emb_padding_idx=config.semseg_num_classes,
             ),
         },
     }
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         target_transofrm=target_transform,
     )
     val_dataset = MultiModalDataset(
-        root_dir=config.train_dir,
+        root_dir=config.val_dir,
         input_tasks=in_domains,
         output_task=out_domains[0],
         train_transform=train_transforms,
