@@ -11,9 +11,9 @@ def depth_configs():
 
     config.device = "cuda"
 
-    config.in_domains = ["rgb", 'semseg']
+    config.in_domains = ["rgb", "semseg"]
     config.out_domains = ["depth"]
-    config.decoder_main_tasks = ["rgb", 'semseg']
+    config.decoder_main_tasks = ["rgb", "semseg"]
 
     config.semseg_num_classes = 256
 

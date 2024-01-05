@@ -10,13 +10,13 @@ from aiogram.types import Message
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import FSInputFile, URLInputFile, BufferedInputFile
 
-router = Router() 
+router = Router()
+
 
 # Handler for image messages with the specified command
-@router.message(F.photo, Command('test'))
+@router.message(F.photo, Command("test"))
 async def handle_depth_from_rgb(message: types.Message):
-
-    global bot 
+    global bot
     # # Download the image
     # await bot.download(
     #     message.photo[-1],
@@ -24,12 +24,10 @@ async def handle_depth_from_rgb(message: types.Message):
     # )
     file_id = message.photo[-1].file_id
     file = await bot.get_file(file_id)
-    download_file= await bot.download_file(file.file_path)
+    download_file = await bot.download_file(file.file_path)
     img = Image.open(download_file)
-    tmp_path = f'./tmp/{file_id}.jpg'
+    tmp_path = f"./tmp/{file_id}.jpg"
     img.save(tmp_path)
-
-
 
     # # Convert the image to a numpy array
     # image = Image.open(io.BytesIO(image_data))
@@ -46,12 +44,12 @@ async def handle_depth_from_rgb(message: types.Message):
 
     # Send the depth image as a reply
     await message.answer_photo(
-        depth_image,
-        caption="Изображение из файла на компьютере"
+        depth_image, caption="Изображение из файла на компьютере"
     )
     os.remove(tmp_path)
 
-   # await bot.send_photo(message.chat.id, depth_image_bytes, caption="Depth prediction")
 
-    # except exceptions.BadRequest:
-    #     await message.reply("Error processing the image. Please try again.")
+# await bot.send_photo(message.chat.id, depth_image_bytes, caption="Depth prediction")
+
+# except exceptions.BadRequest:
+#     await message.reply("Error processing the image. Please try again.")

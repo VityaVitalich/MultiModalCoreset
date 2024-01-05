@@ -16,7 +16,7 @@ router = Router()
 multimae_img = FSInputFile("./figs/multimae_fig.png")
 
 
-@router.message(Command('start'))
+@router.message(Command("start"))
 async def cmd_start(message: types.Message):
     greeting_message = """
     <b>👋 Hello there! Welcome to the Depth Prediction Bot! 🤖</b>
@@ -25,11 +25,10 @@ async def cmd_start(message: types.Message):
 
     Feel free to explore the capabilities of the bot and enjoy your experience! 🚀
     """
-    await message.answer(
-        greeting_message,
-        parse_mode=ParseMode.HTML)
+    await message.answer(greeting_message, parse_mode=ParseMode.HTML)
 
-@router.message(Command('help'))
+
+@router.message(Command("help"))
 async def cmd_help(message: types.Message):
     help_message = """
     <b> Welcome to the Depth Prediction Bot!🤖 </b>
@@ -61,11 +60,10 @@ async def cmd_help(message: types.Message):
 
     Feel free to explore the capabilities of the bot and enjoy your experience! 🚀
     """
-    await message.answer(
-        help_message,
-        parse_mode=ParseMode.HTML)
+    await message.answer(help_message, parse_mode=ParseMode.HTML)
 
-@router.message(Command('model_info'))
+
+@router.message(Command("model_info"))
 async def cmd_model_info(message: types.Message):
     model_info_message = """
 <b>🌟 Model Information 🌟</b>
@@ -90,17 +88,12 @@ The model was fine-tuned on the CLEVR dataset for 5 epochs with a learning rate 
 
 You can check the architecture on the following graph.
 """
-    await message.answer(
-        model_info_message,
-        parse_mode=ParseMode.HTML)
+    await message.answer(model_info_message, parse_mode=ParseMode.HTML)
+
+    await message.answer_photo(multimae_img, caption="MultiMAE Architecture")
 
 
-    await message.answer_photo(
-        multimae_img,
-        caption="MultiMAE Architecture"
-    )
-
-@router.message(Command('author_info'))
+@router.message(Command("author_info"))
 async def cmd_author_info(message: types.Message):
     author_info_message = """
 <b>👨‍💻 Author Information</b>
@@ -126,6 +119,4 @@ If you have valuable ideas for joint research or collaboration in these areas, I
 Let's explore innovative possibilities in AI together!
 """
 
-    await message.answer(
-        author_info_message,
-        parse_mode=ParseMode.HTML)
+    await message.answer(author_info_message, parse_mode=ParseMode.HTML)

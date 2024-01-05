@@ -29,38 +29,35 @@ model = model_utils.init_rgb_model()
 
 rgb_calls = 0
 
-tmp_path = Path('./tmp/')
+tmp_path = Path("./tmp/")
 tmp_path.mkdir(parents=True, exist_ok=True)
 
-@dp.message(F.photo, Command('rgb'))
-async def handle_depth_from_rgb(message: types.Message):
 
+@dp.message(F.photo, Command("rgb"))
+async def handle_depth_from_rgb(message: types.Message):
     global rgb_calls
     rgb_calls += 1
     try:
         file_id = message.photo[-1].file_id
         file = await bot.get_file(file_id)
-        download_file= await bot.download_file(file.file_path)
+        download_file = await bot.download_file(file.file_path)
         img = Image.open(download_file)
-        tmp_path = f'./tmp/{file_id}.jpg'
+        tmp_path = f"./tmp/{file_id}.jpg"
 
         out = model_utils.inference(img, model)
         model_utils.save_predictions(out, tmp_path)
         depth_image = FSInputFile(tmp_path)
 
         # Send the depth image as a reply
-        await message.answer_photo(
-            depth_image,
-            caption="Predicted depth"
-        )
+        await message.answer_photo(depth_image, caption="Predicted depth")
         os.remove(tmp_path)
 
     except:
         await message.reply("Error processing the image. Please try again.")
 
-@dp.message(Command('bot_stats'))
+
+@dp.message(Command("bot_stats"))
 async def bot_stats(message: types.Message):
-    
     global rgb_calls
     rating = rate_handler.overall_rating / rate_handler.overall_times_rated
     stats_message = """
@@ -70,14 +67,16 @@ async def bot_stats(message: types.Message):
 
 <b>Mean Rating:</b> {}
 
-""".format(rgb_calls, rating)
+""".format(
+        rgb_calls, rating
+    )
 
-    await message.answer(
-        stats_message,
-        parse_mode=ParseMode.HTML)
+    await message.answer(stats_message, parse_mode=ParseMode.HTML)
+
 
 async def main():
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

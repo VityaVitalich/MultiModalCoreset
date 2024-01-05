@@ -1,6 +1,6 @@
-import sys 
+import sys
 
-sys.path.append('../multimae/')
+sys.path.append("../multimae/")
 
 import torch
 import numpy as np
@@ -23,8 +23,7 @@ from PIL import Image
 
 
 def init_rgb_model():
-
-    device = 'cuda:0'
+    device = "cuda:0"
 
     ### SETUP DOMAIN ADAPTERS ###
 
@@ -47,8 +46,8 @@ def init_rgb_model():
         },
     }
 
-    in_domains = ['rgb']
-    out_domains = ['depth']
+    in_domains = ["rgb"]
+    out_domains = ["depth"]
     all_domains = list(set(in_domains) | set(out_domains))
 
     patch_size = 16
@@ -67,7 +66,7 @@ def init_rgb_model():
 
     ### MAKE OUTPUT ADAPTERS ###
 
-    decoder_main_tasks = ['rgb']
+    decoder_main_tasks = ["rgb"]
 
     additional_targets = {
         domain: DOMAIN_CONF[domain]["aug_type"] for domain in all_domains
@@ -99,7 +98,7 @@ def init_rgb_model():
         input_adapters=input_adapters, output_adapters=output_adapters
     )
 
-    ckpt_path = './model_ckpt/epoch__0003_-_loss__315.9.ckpt'
+    ckpt_path = "./model_ckpt/epoch__0003_-_loss__315.9.ckpt"
 
     ### LOAD CHECKPOINT ###
     finetune_path = ckpt_path
@@ -117,38 +116,38 @@ def init_rgb_model():
 
     return model
 
-def prepare_image(img):
 
+def prepare_image(img):
     train_transforms = transforms.Compose(
-            [transforms.ToTensor(), transforms.Resize((224, 224))]
-        )
-    
+        [transforms.ToTensor(), transforms.Resize((224, 224))]
+    )
+
     x = train_transforms(img)
-    sample_dict = {'rgb': x.unsqueeze(0)}
+    sample_dict = {"rgb": x.unsqueeze(0)}
 
     return sample_dict
 
+
 def inference(img, model):
-    
     sample_dict = prepare_image(img)
-    
+
     with torch.no_grad():
         out = model(sample_dict, return_all_layers=True)
 
-    pred = out['depth'][0][0].numpy()
+    pred = out["depth"][0][0].numpy()
 
     return pred
-    
+
+
 def save_predictions(pred, path):
     plt.imshow(pred)
-    plt.axis('off')
+    plt.axis("off")
     plt.tight_layout()
     plt.savefig(path)
 
 
 def init_rgb_semseg_model():
-
-    device = 'cuda:0'
+    device = "cuda:0"
 
     ### SETUP DOMAIN ADAPTERS ###
 
@@ -182,8 +181,8 @@ def init_rgb_semseg_model():
         },
     }
 
-    in_domains = ['rgb', 'semseg']
-    out_domains = ['depth']
+    in_domains = ["rgb", "semseg"]
+    out_domains = ["depth"]
     all_domains = list(set(in_domains) | set(out_domains))
 
     patch_size = 16
@@ -202,7 +201,7 @@ def init_rgb_semseg_model():
 
     ### MAKE OUTPUT ADAPTERS ###
 
-    decoder_main_tasks = ['rgb', 'semseg']
+    decoder_main_tasks = ["rgb", "semseg"]
 
     additional_targets = {
         domain: DOMAIN_CONF[domain]["aug_type"] for domain in all_domains
@@ -234,7 +233,7 @@ def init_rgb_semseg_model():
         input_adapters=input_adapters, output_adapters=output_adapters
     )
 
-    ckpt_path = '/home/MultiModalCoreset/multimae/ckpt/long-rgb-semseg_2023-12-23_21:46:00/epoch__0005_-_loss__281.8.ckpt'
+    ckpt_path = "/home/MultiModalCoreset/multimae/ckpt/long-rgb-semseg_2023-12-23_21:46:00/epoch__0005_-_loss__281.8.ckpt"
 
     ### LOAD CHECKPOINT ###
     finetune_path = ckpt_path
@@ -252,8 +251,8 @@ def init_rgb_semseg_model():
 
     return model
 
-def prepare_multi_image(img, semseg):
 
+def prepare_multi_image(img, semseg):
     train_transforms = {
         "rgb": transforms.Compose(
             [transforms.ToTensor(), transforms.Resize((224, 224))]
@@ -267,21 +266,20 @@ def prepare_multi_image(img, semseg):
             ]
         ),
     }
-    
-    x = train_transforms['rgb'](img)
-    semseg = train_transforms['semseg'](semseg)
-    sample_dict = {'rgb': x.unsqueeze(0), 
-                    'semseg': semseg.unsqueeze(0)}
+
+    x = train_transforms["rgb"](img)
+    semseg = train_transforms["semseg"](semseg)
+    sample_dict = {"rgb": x.unsqueeze(0), "semseg": semseg.unsqueeze(0)}
 
     return sample_dict
 
+
 def multi_inference(img, semseg, model):
-    
     sample_dict = prepare_mulit_image(img, semseg)
-    
+
     with torch.no_grad():
         out = model(sample_dict, return_all_layers=True)
 
-    pred = out['depth'][0][0].numpy()
+    pred = out["depth"][0][0].numpy()
 
     return pred
