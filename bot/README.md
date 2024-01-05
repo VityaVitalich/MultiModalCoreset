@@ -4,8 +4,7 @@
 ### How to start it
 
 1) Setup a token as environmental variable BOT_TOKEN
-```
-bash
+```bash
 export BOT_TOKEN=<your token>
 ```
 2) install requirements from requirements.txt
