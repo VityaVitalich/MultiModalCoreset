@@ -4,7 +4,7 @@ import ml_collections
 def depth_configs():
     config = ml_collections.ConfigDict()
 
-    config.run_name = "test-rgb-semseg"
+    config.run_name = "long-rgb-semseg"
     config.log_dir = "./logs/"
     config.cons_lvl = "INFO"
     config.file_lvl = "INFO"
@@ -24,8 +24,8 @@ def depth_configs():
 
     config.lr = 3e-4
     config.weight_decay = 1e-4
-    config.total_epochs = 1
-    config.batch_size = 64
+    config.total_epochs = 5
+    config.batch_size = 32
 
     config.train_dir = "../../data/dq/clevr_complex/train"
     config.val_dir = "../../data/dq/clevr_complex/val"

@@ -12,6 +12,7 @@ from aiogram.types import FSInputFile, URLInputFile, BufferedInputFile
 
 router = Router() 
 overall_rating = 0
+overall_times_rated = 0
 
 @router.message(Command("rate"))
 async def cmd_rate(message: types.Message):
@@ -31,20 +32,24 @@ async def cmd_rate(message: types.Message):
 
 @router.message(F.text == "Отлично!")
 async def rate_excelent(message: types.Message):
-
+    global overall_times_rated 
+    overall_times_rated += 1
     global overall_rating
     overall_rating += 5
     await message.reply("Спасибо! Мы рады, что Вам понравилось", reply_markup=types.ReplyKeyboardRemove())
 
 @router.message(F.text == "Лучше среднего")
 async def rate_good(message: types.Message):
+    global overall_times_rated 
+    overall_times_rated += 1
     global overall_rating
-
     overall_rating += 4
     await message.reply("Спасибо! Мы работаем, чтобы стало идеально", reply_markup=types.ReplyKeyboardRemove())
 
 @router.message(F.text == "Сойдет")
 async def rate_okey(message: types.Message):
+    global overall_times_rated 
+    overall_times_rated += 1
     global overall_rating
 
     overall_rating += 3
@@ -52,6 +57,8 @@ async def rate_okey(message: types.Message):
 
 @router.message(F.text == "Хуже среднего")
 async def rate_bad(message: types.Message):
+    global overall_times_rated 
+    overall_times_rated += 1
     global overall_rating
 
     overall_rating += 2
@@ -59,6 +66,8 @@ async def rate_bad(message: types.Message):
 
 @router.message(F.text == "Очень плохо!")
 async def rate_worst(message: types.Message):
+    global overall_times_rated 
+    overall_times_rated += 1
     global overall_rating
 
     overall_rating += 1

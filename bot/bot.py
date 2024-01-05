@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher, types
 import io
 import numpy as np
 import os
+from pathlib import Path
 from PIL import Image
 from aiogram import F
 from aiogram.types import Message
@@ -24,38 +25,56 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 dp.include_routers(rate_handler.router, system_handlers.router)
 
-#model = model_utils.init_rgb_model()
+model = model_utils.init_rgb_model()
 
+rgb_calls = 0
 
+tmp_path = Path('./tmp/')
+tmp_path.mkdir(parents=True, exist_ok=True)
 
+@dp.message(F.photo, Command('rgb'))
+async def handle_depth_from_rgb(message: types.Message):
 
-# @dp.message(F.photo, Command('rgb'))
-# async def handle_depth_from_rgb(message: types.Message):
-#     file_id = message.photo[-1].file_id
-#     file = await bot.get_file(file_id)
-#     download_file= await bot.download_file(file.file_path)
-#     img = Image.open(download_file)
-#     tmp_path = f'./tmp/{file_id}.jpg'
+    global rgb_calls
+    rgb_calls += 1
+    try:
+        file_id = message.photo[-1].file_id
+        file = await bot.get_file(file_id)
+        download_file= await bot.download_file(file.file_path)
+        img = Image.open(download_file)
+        tmp_path = f'./tmp/{file_id}.jpg'
 
-#     out = model_utils.inference(img, model)
-#     model_utils.save_predictions(out, tmp_path)
-#     #img.save(tmp_path)
+        out = model_utils.inference(img, model)
+        model_utils.save_predictions(out, tmp_path)
+        depth_image = FSInputFile(tmp_path)
 
-#     # Perform inference on the model
-#     # depth_image = predict(model, image)  # Replace with your actual prediction function
-#     depth_image = FSInputFile(tmp_path)
+        # Send the depth image as a reply
+        await message.answer_photo(
+            depth_image,
+            caption="Predicted depth"
+        )
+        os.remove(tmp_path)
 
-#     # Send the depth image as a reply
-#     await message.answer_photo(
-#         depth_image,
-#         caption="Изображение из файла на компьютере"
-#     )
-#     os.remove(tmp_path)
+    except:
+        await message.reply("Error processing the image. Please try again.")
 
-#     # except exceptions.BadRequest:
-#     #     await message.reply("Error processing the image. Please try again.")
+@dp.message(Command('bot_stats'))
+async def bot_stats(message: types.Message):
+    
+    global rgb_calls
+    rating = rate_handler.overall_rating / rate_handler.overall_times_rated
+    stats_message = """
+<b>📊 Overall Bot Statistics</b>
 
+<b>RGB Model Usage:</b> {} times
 
+<b>Mean Rating:</b> {}
+
+""".format(rgb_calls, rating)
+
+    await message.answer(
+        stats_message,
+        parse_mode=ParseMode.HTML)
 
 async def main():
     await dp.start_polling(bot)
