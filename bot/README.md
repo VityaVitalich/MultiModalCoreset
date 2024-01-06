@@ -1,5 +1,8 @@
 # Multi-Image Bot
 
+### Usage Example
+![](https://github.com/VityaVitalich/MultiModalCoreset/blob/main/bot/figs/bot_example.gif)
+
 
 ### How to start it
 
