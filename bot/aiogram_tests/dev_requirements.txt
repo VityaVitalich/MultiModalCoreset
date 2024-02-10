@@ -1,0 +1,8 @@
+aiogram==3.0.0b9
+pytest
+pytest-asyncio
+black
+pyupgrade
+reorder-python-imports
+autoflake
+twine

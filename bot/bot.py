@@ -8,12 +8,13 @@ from pathlib import Path
 from PIL import Image
 from aiogram import F
 from aiogram.types import Message
+from messages import greeting_message
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import FSInputFile, URLInputFile, BufferedInputFile
 import model_utils
 from aiogram.enums import ParseMode
-
 import rate_handler
+from rate_handler import overall_rating, overall_times_rated
 import system_handlers
 
 # Включаем логирование, чтобы не пропустить важные сообщения
@@ -37,7 +38,9 @@ tmp_path.mkdir(parents=True, exist_ok=True)
 async def handle_depth_from_rgb(message: types.Message):
     global rgb_calls
     rgb_calls += 1
+
     try:
+        
         file_id = message.photo[-1].file_id
         file = await bot.get_file(file_id)
         download_file = await bot.download_file(file.file_path)
@@ -59,19 +62,41 @@ async def handle_depth_from_rgb(message: types.Message):
 @dp.message(Command("bot_stats"))
 async def bot_stats(message: types.Message):
     global rgb_calls
-    rating = rate_handler.overall_rating / rate_handler.overall_times_rated
-    stats_message = """
-<b>📊 Overall Bot Statistics</b>
+    global overall_rating
+    global overall_times_rated
 
-<b>RGB Model Usage:</b> {} times
+    if rate_handler.overall_times_rated == 0:
+        stats_message = """
+        <b>📊 Overall Bot Statistics</b>
 
-<b>Mean Rating:</b> {}
+        <b>RGB Model Usage:</b> {}
 
-""".format(
-        rgb_calls, rating
-    )
+        <b>Mean Rating:</b> Rating is not set Yet
 
-    await message.answer(stats_message, parse_mode=ParseMode.HTML)
+        """.format(
+                rgb_calls
+            )
+
+        await message.answer(stats_message, parse_mode=ParseMode.HTML)
+    else:
+        rating = rate_handler.overall_rating / rate_handler.overall_times_rated
+        stats_message = """
+    <b>📊 Overall Bot Statistics</b>
+
+    <b>RGB Model Usage:</b> {} times
+
+    <b>Mean Rating:</b> {}
+
+    """.format(
+            rgb_calls, rating
+        )
+
+        await message.answer(stats_message, parse_mode=ParseMode.HTML)
+
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer(greeting_message, parse_mode=ParseMode.HTML)
+
 
 
 async def main():
