@@ -50,8 +50,6 @@ async def handle_depth_from_rgb(message: types.Message):
         await message.answer_photo(depth_image, caption="Predicted depth")
         os.remove(tmp_path)
 
-    except KeyboardInterrupt:
-        raise
     except Exception as e:
         print(f"An error occurred: {e}")
         await message.reply("Error processing the image. Please try again.")
