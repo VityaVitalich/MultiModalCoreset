@@ -1,3 +1,4 @@
+# flake8: noqa
 
 greeting_message = """
 <b>👋 Hello there! Welcome to the Depth Prediction Bot! 🤖</b>

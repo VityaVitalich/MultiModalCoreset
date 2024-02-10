@@ -1,14 +1,6 @@
-import asyncio
-import logging
-from aiogram import Bot, Dispatcher, types
-import io
-import numpy as np
-import os
-from PIL import Image
+from aiogram import types
 from aiogram import F, Router
-from aiogram.types import Message
-from aiogram.filters import Command, CommandObject, CommandStart
-from aiogram.types import FSInputFile, URLInputFile, BufferedInputFile
+from aiogram.filters import Command
 
 router = Router()
 overall_rating = 0
@@ -77,7 +69,7 @@ async def rate_bad(message: types.Message):
 
     overall_rating += 2
     await message.reply(
-        "Спасибо! Нам жаль, что сервис справился плохо, в скором времени станет лучше",
+        "Спасибо! Нам жаль, что сервис справился плохо, в скором времени станет лучше",  # noqa: 501
         reply_markup=types.ReplyKeyboardRemove(),
     )
 
@@ -90,6 +82,6 @@ async def rate_worst(message: types.Message):
 
     overall_rating += 1
     await message.reply(
-        "Спасибо! Нам очень жаль, что сервис не смог справиться, с последующими обновлениями качество вырастет",
+        "Спасибо! Нам очень жаль, что сервис не смог справиться, с последующими обновлениями качество вырастет",  # noqa: 501
         reply_markup=types.ReplyKeyboardRemove(),
     )

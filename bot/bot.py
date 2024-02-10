@@ -1,20 +1,16 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types
-import io
-import numpy as np
 import os
 from pathlib import Path
 from PIL import Image
 from aiogram import F
-from aiogram.types import Message
 from messages import greeting_message
-from aiogram.filters import Command, CommandObject, CommandStart
-from aiogram.types import FSInputFile, URLInputFile, BufferedInputFile
+from aiogram.filters import Command
+from aiogram.types import FSInputFile
 import model_utils
 from aiogram.enums import ParseMode
 import rate_handler
-from rate_handler import overall_rating, overall_times_rated
 import system_handlers
 
 # Включаем логирование, чтобы не пропустить важные сообщения
@@ -40,7 +36,6 @@ async def handle_depth_from_rgb(message: types.Message):
     rgb_calls += 1
 
     try:
-        
         file_id = message.photo[-1].file_id
         file = await bot.get_file(file_id)
         download_file = await bot.download_file(file.file_path)
@@ -55,7 +50,10 @@ async def handle_depth_from_rgb(message: types.Message):
         await message.answer_photo(depth_image, caption="Predicted depth")
         os.remove(tmp_path)
 
-    except:
+    except KeyboardInterrupt:
+        raise
+    except Exception as e:
+        print(f"An error occurred: {e}")
         await message.reply("Error processing the image. Please try again.")
 
 
@@ -74,8 +72,8 @@ async def bot_stats(message: types.Message):
         <b>Mean Rating:</b> Rating is not set Yet
 
         """.format(
-                rgb_calls
-            )
+            rgb_calls
+        )
 
         await message.answer(stats_message, parse_mode=ParseMode.HTML)
     else:
@@ -93,10 +91,10 @@ async def bot_stats(message: types.Message):
 
         await message.answer(stats_message, parse_mode=ParseMode.HTML)
 
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer(greeting_message, parse_mode=ParseMode.HTML)
-
 
 
 async def main():

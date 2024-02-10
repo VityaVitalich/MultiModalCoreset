@@ -1,31 +1,19 @@
 import sys
+import torch
+from functools import partial
+from torchvision import transforms
+import matplotlib.pyplot as plt
 
 sys.path.append("../multimae/")
-
-import torch
-import numpy as np
-import os
-import torch.nn as nn
-from functools import partial
-from input_adapters import PatchedInputAdapter, SemSegInputAdapter
-from dataset import MultiModalDataset, LongTransform, FirstChannelTransform
-from torchvision import transforms
-from output_adapters import DPTOutputAdapter, ConvNeXtAdapter
-from multimae import multivit_base
-from pos_embed_multi import interpolate_pos_embed_multimae
-from pathlib import Path
-from datetime import datetime
-import logging
-from configs.depth import depth_configs
-
-import matplotlib.pyplot as plt
-from PIL import Image
+from input_adapters import PatchedInputAdapter  # noqa:E402
+from dataset import LongTransform, FirstChannelTransform  # noqa:E402
+from output_adapters import DPTOutputAdapter, ConvNeXtAdapter  # noqa:E402
+from multimae import multivit_base  # noqa:E402
+from pos_embed_multi import interpolate_pos_embed_multimae  # noqa:E402
 
 
 def init_rgb_model():
-    device = "cuda:0"
-
-    ### SETUP DOMAIN ADAPTERS ###
+    # SETUP DOMAIN ADAPTERS #
 
     DOMAIN_CONF = {
         "rgb": {
@@ -48,12 +36,11 @@ def init_rgb_model():
 
     in_domains = ["rgb"]
     out_domains = ["depth"]
-    all_domains = list(set(in_domains) | set(out_domains))
 
     patch_size = 16
     input_size = 224
 
-    ### INPUT ADAPTERS ###
+    # INPUT ADAPTERS #
 
     input_adapters = {
         domain: DOMAIN_CONF[domain]["input_adapter"](
@@ -64,15 +51,9 @@ def init_rgb_model():
         for domain in in_domains
     }
 
-    ### MAKE OUTPUT ADAPTERS ###
+    # MAKE OUTPUT ADAPTERS #
 
     decoder_main_tasks = ["rgb"]
-
-    additional_targets = {
-        domain: DOMAIN_CONF[domain]["aug_type"] for domain in all_domains
-    }
-
-    # DPT settings are fixed for ViT-B. Modify them if using a different backbone.
 
     adapters_dict = {
         "dpt": DPTOutputAdapter,
@@ -91,16 +72,14 @@ def init_rgb_model():
         for domain in out_domains
     }
 
-    ### SET MODEL ###
-    model_name = "multivit_base"
-    drop_path_encoder = 0.0
+    # SET MODEL #
     model = multivit_base(
         input_adapters=input_adapters, output_adapters=output_adapters
     )
 
     ckpt_path = "./model_ckpt/epoch__0003_-_loss__315.9.ckpt"
 
-    ### LOAD CHECKPOINT ###
+    # LOAD CHECKPOINT #
     finetune_path = ckpt_path
     checkpoint = torch.load(finetune_path, map_location="cpu")
 
@@ -147,9 +126,7 @@ def save_predictions(pred, path):
 
 
 def init_rgb_semseg_model():
-    device = "cuda:0"
-
-    ### SETUP DOMAIN ADAPTERS ###
+    # SETUP DOMAIN ADAPTERS #
 
     DOMAIN_CONF = {
         "rgb": {
@@ -168,27 +145,27 @@ def init_rgb_semseg_model():
             "stride_level": 1,
             "aug_type": "mask",
         },
-        "semseg": {
-            "stride_level": 1,
-            "aug_type": "mask",
-            "input_adapter": partial(
-                SemSegInputAdapter,
-                num_classes=config.semseg_num_classes,
-                dim_class_emb=32,
-                interpolate_class_emb=False,
-                emb_padding_idx=config.semseg_num_classes,
-            ),
-        },
+        # "semseg": {
+        #     "stride_level": 1,
+        #     "aug_type": "mask",
+        #     "input_adapter": partial(
+        #         SemSegInputAdapter,
+        #         num_classes=config.semseg_num_classes,
+        #         dim_class_emb=32,
+        #         interpolate_class_emb=False,
+        #         emb_padding_idx=config.semseg_num_classes,
+        #     ),
+        # },
+        # not working
     }
 
     in_domains = ["rgb", "semseg"]
     out_domains = ["depth"]
-    all_domains = list(set(in_domains) | set(out_domains))
 
     patch_size = 16
     input_size = 224
 
-    ### INPUT ADAPTERS ###
+    # INPUT ADAPTERS #
 
     input_adapters = {
         domain: DOMAIN_CONF[domain]["input_adapter"](
@@ -199,15 +176,9 @@ def init_rgb_semseg_model():
         for domain in in_domains
     }
 
-    ### MAKE OUTPUT ADAPTERS ###
+    # MAKE OUTPUT ADAPTERS #
 
     decoder_main_tasks = ["rgb", "semseg"]
-
-    additional_targets = {
-        domain: DOMAIN_CONF[domain]["aug_type"] for domain in all_domains
-    }
-
-    # DPT settings are fixed for ViT-B. Modify them if using a different backbone.
 
     adapters_dict = {
         "dpt": DPTOutputAdapter,
@@ -226,16 +197,15 @@ def init_rgb_semseg_model():
         for domain in out_domains
     }
 
-    ### SET MODEL ###
-    model_name = "multivit_base"
-    drop_path_encoder = 0.0
+    # SET MODEL #
+
     model = multivit_base(
         input_adapters=input_adapters, output_adapters=output_adapters
     )
 
-    ckpt_path = "/home/MultiModalCoreset/multimae/ckpt/long-rgb-semseg_2023-12-23_21:46:00/epoch__0005_-_loss__281.8.ckpt"
+    ckpt_path = "/home/MultiModalCoreset/multimae/ckpt/long-rgb-semseg_2023-12-23_21:46:00/epoch__0005_-_loss__281.8.ckpt"  # noqa: 501
 
-    ### LOAD CHECKPOINT ###
+    # LOAD CHECKPOINT #
     finetune_path = ckpt_path
     checkpoint = torch.load(finetune_path, map_location="cpu")
 
@@ -275,7 +245,7 @@ def prepare_multi_image(img, semseg):
 
 
 def multi_inference(img, semseg, model):
-    sample_dict = prepare_mulit_image(img, semseg)
+    sample_dict = prepare_multi_image(img, semseg)
 
     with torch.no_grad():
         out = model(sample_dict, return_all_layers=True)
