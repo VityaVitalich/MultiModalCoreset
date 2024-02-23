@@ -46,6 +46,7 @@
 
 ### Dataset Quantization
 
+Please see README.md at Dataset_Quantization/ directory
 
 ### Bot
 
