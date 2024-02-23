@@ -20,45 +20,6 @@ Official implementation of "[Dataset Quantization](https://arxiv.org/abs/2308.10
 2. Validation 50,000
 3. 1000 Classes
 
-**Dataset Quantization**
-
-[Daquan Zhou*](https://scholar.google.com/citations?user=DdCAbWwAAAAJ&hl=en), [Kai Wang*](https://kaiwang960112.github.io/), [Jianyang Gu*](https://vimar-gu.github.io/), [Xiangyu Peng](https://scholar.google.com/citations?user=KRUTk7sAAAAJ&hl=en), [Dongze Lian](https://dongzelian.com/), [Yifan Zhang](https://sites.google.com/view/yifan-zhang), [Yang You<sup>+</sup>](https://www.comp.nus.edu.sg/~youy/), [Jiashi Feng<sup>+</sup>](https://sites.google.com/site/jshfeng/) (*Equal Contribution, <sup>+</sup>Corresponding Author)
-
-## Highlight :sparkles:​
-
-- DQ is accepted by **ICCV2023**!
-- DQ is able to generate condensed small datasets for training unseen network architectures with state-of-the-art compression ratios for lossless model training. 
-- We support both **vision** and **language** dataset compression:
-    - **Vision tasks**: with 60% data from ImageNet, the models can be trained with no performance drop including classification, semantic segmentation, and object detection.
-    - **Language tasks**: with 20% data from Alpaca’s instruction tuning data, the models can be trained with negligible performance on BBH, DROP, MMLU, and Human-Eval. 
-
-## TODO List
-- [ ] ImageNet selected indices
-
-## Getting Started
-
-Download the repo:
-
-```bash
-git clone https://github.com/vimar-gu/DQ.git
-cd DQ
-```
-
-Set up the environment:
-
-```bash
-conda create -n dq python=3.9
-conda activate dq
-pip install -r requirements.txt
-```
-
-prepare the pretrained MAE model for the image reconstruction. 
-
-```bash
-wget https://dl.fbaipublicfiles.com/mae/visualize/mae_visualize_vit_large_ganloss.pth
-mv mae_visualize_vit_large_ganloss.pth ./pretrained
-```
-
 ## DQ for Image Classification
 
 ### Overview
@@ -225,25 +186,3 @@ torchrun --nproc_per_node=8 --master_port=<your_random_port> train.py \
 
 We use [instruct-eval](https://github.com/declare-lab/instruct-eval) repo to evaluate the finetuned model. Please follow the instructions in the repo to run the evaluation.
 
-## Acknowledgement
-
-This project is mainly developed based on the following repos:
-- [DeepCore](https://github.com/PatrickZH/DeepCore)
-- [pytorch-image-models](https://github.com/huggingface/pytorch-image-models)
-- [pytorch-cifar](https://github.com/kuangliu/pytorch-cifar)
-
-We would like to especially thank [**Zangwei Zheng**](https://zhengzangw.github.io) for his help on the implementation of DQ in language tasks and **Ge Yan** for his advice on the mathematical proof of the submodular part. 
-
-
-## Citation
-
-If you find this work helpful, please cite:
-
-```
-@article{zhou2023dataset,
-  title={Dataset Quantization},
-  author={Zhou, Daquan and Wang, Kai and Gu, Jianyang and Peng, Xiangyu and Lian, Dongze and Zhang, Yifan and You, Yang and Feng, Jiashi},
-  journal={arXiv preprint arXiv:2308.10524},
-  year={2023}
-}
-```
