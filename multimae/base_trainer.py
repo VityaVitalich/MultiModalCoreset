@@ -102,8 +102,6 @@ class BaseTrainer:
             ckpt_resume: path to the checkpoint to resume training from.
             device: device to train and validate on.
             metrics_on_train: wether to compute metrics on train set.
-            model_conf: Model configs from configs/ dir
-            data_conf: Data configs from configs/ dir
         """
         assert (total_iters is None) ^ (
             total_epochs is None
@@ -122,10 +120,10 @@ class BaseTrainer:
         self._ckpt_resume = ckpt_resume
         self._device = device
         self._metrics_on_train = metrics_on_train
-        if self._metrics_on_train:
-            raise NotImplementedError(
-                "Metrics on train should be implemented for Classification for example but is not ready now"
-            )
+        # if self._metrics_on_train:
+        #     raise NotImplementedError(
+        #         "Metrics on train should be implemented for Classification for example but is not ready now"
+        #     )
 
         self._model = model
         self._model.to(device)
@@ -301,7 +299,7 @@ class BaseTrainer:
             )  # TODO: fix return all to only of dpt output adapter
             if self._metrics_on_train:
                 scores.append(
-                    self.compute_score(self.dict_to_cpu(pred), gt)
+                    self.compute_score(self.dict_to_cpu(pred), gt.to("cpu"))
                 )  # TODO: fix it since now returns only 1 metric by interface
 
             loss = self.compute_loss(pred, gt)

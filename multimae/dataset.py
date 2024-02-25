@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from PIL import Image
 import torch
 from torchvision import transforms
@@ -19,6 +20,17 @@ class LongTransform:
 
     def __call__(self, x: torch.Tensor):
         return x.long()
+
+
+class Randomizer:
+    def __init__(self, p, transform):
+        self.p = p
+        self.transform = transform
+
+    def __call__(self, img):
+        if np.random.binomial(1, p=self.p):
+            return self.transform(img)
+        return img
 
 
 class MultiModalDataset(Dataset):

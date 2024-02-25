@@ -5,7 +5,7 @@ import os
 import torch.nn as nn
 from functools import partial
 from input_adapters import PatchedInputAdapter, SemSegInputAdapter
-from dataset import MultiModalDataset, LongTransform, FirstChannelTransform
+from dataset import MultiModalDataset, LongTransform, FirstChannelTransform, Randomizer
 from torchvision import transforms
 from output_adapters import DPTOutputAdapter, ConvNeXtAdapter
 from multimae import multivit_base
@@ -13,6 +13,7 @@ from pos_embed_multi import interpolate_pos_embed_multimae
 from pathlib import Path
 from datetime import datetime
 import logging
+import math
 from configs.depth import depth_configs
 
 config = depth_configs()
@@ -157,22 +158,33 @@ if __name__ == "__main__":
     msg = model.load_state_dict(checkpoint_model, strict=False)
     print(msg)
 
-    ### SET OPTIMIZER ###
-
-    lr = config.lr
-    decay = config.weight_decay
-    opt = torch.optim.Adam(model.parameters(), lr, weight_decay=decay)
-
     ### MAKE TRANSFORMS ###
 
     train_transforms = {
         "rgb": transforms.Compose(
-            [transforms.ToTensor(), transforms.Resize((224, 224))]
+            [
+                transforms.ToTensor(),
+                transforms.Resize((224, 224)),
+                transforms.Normalize(
+                    mean=[121.1943975, 120.18005528, 118.44828826],
+                    std=[23.01586477, 22.23779258, 22.15062455],
+                ),
+                Randomizer(p=0.5, transform=transforms.RandomRotation(degrees=90)),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomVerticalFlip(p=0.5),
+            ]
         ),
         "semseg": transforms.Compose(
             [
                 transforms.PILToTensor(),
-                transforms.Resize((224, 224)),
+                transforms.Resize(
+                    (224, 224), interpolation=transforms.InterpolationMode.NEAREST
+                ),
+                Randomizer(
+                    p=0.5, transform=transforms.RandomRotation(degrees=90, fill=255)
+                ),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomVerticalFlip(p=0.5),
                 FirstChannelTransform(),
                 LongTransform(),
             ]
@@ -205,6 +217,16 @@ if __name__ == "__main__":
     )
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bs, shuffle=False)
 
+    ### SET OPTIMIZER ###
+
+    lr = config.lr
+    decay = config.weight_decay
+    opt = torch.optim.Adam(model.parameters(), lr, weight_decay=decay)
+    total_iterations = len(train_loader) * config.total_epochs
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        opt, T_max=total_iterations, eta_min=1e-7
+    )
+
     ### SETUP TRAINER ###
 
     total_epochs = config.total_epochs
@@ -215,10 +237,10 @@ if __name__ == "__main__":
         val_loader=val_loader,
         run_name=run_name,
         ckpt_dir=Path(log_dir).parent / "ckpt",
-        ckpt_replace=True,
+        ckpt_replace=config.save_every_epoch,
         ckpt_resume=None,
-        ckpt_track_metric="loss",
-        metrics_on_train=False,
+        ckpt_track_metric="rmse",
+        metrics_on_train=True,
         total_epochs=total_epochs,
         device=device,
     )

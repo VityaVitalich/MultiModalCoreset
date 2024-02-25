@@ -74,6 +74,7 @@ class RgbDepthTrainer(BaseTrainer):
         log_diff[~mask_valid] = 0
 
         metrics = {
+            "berhu_loss": masked_berhu_loss(preds, target),
             "rmse": (diff.square().sum() / n).sqrt(),
             "rel": (diff / torch.clamp_min(target, 1e-6))[mask_valid].mean(),
             "srel": (diff**2 / torch.clamp_min(target, 1e-6))[mask_valid].mean(),
