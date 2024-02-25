@@ -4,12 +4,7 @@ import os
 from aiogram.filters import Command
 import bot
 import rate_handler
-from system_handlers import (
-    cmd_help,
-    cmd_model_info,
-    multimae_img_path,
-    cmd_author_info
-)
+from system_handlers import cmd_help, cmd_model_info, multimae_img_path, cmd_author_info
 from messages import (
     greeting_message,
     help_message,
@@ -28,8 +23,7 @@ from aiogram_tests.types.dataset import MESSAGE, MESSAGE_WITH_PHOTO  # noqa:E402
 
 @pytest.mark.asyncio
 async def test_command_handler():
-    requester = MockedBot(MessageHandler(bot.cmd_start,
-                                         Command(commands=["start"])))
+    requester = MockedBot(MessageHandler(bot.cmd_start, Command(commands=["start"])))
     calls = await requester.query(MESSAGE.as_object(text="/start"))
     answer_message = calls.send_message.fetchone().text
     assert answer_message == greeting_message
@@ -214,10 +208,7 @@ async def test_command_cmd_rate_bad():
     calls = await requester.query(MESSAGE.as_object(text="Хуже среднего"))
     answer_message = calls.send_message.fetchone().text
     message = "Спасибо! Нам жаль, что сервис справился плохо, в скором времени станет лучше"  # noqa: E501
-    assert (
-        answer_message
-        == message
-    )
+    assert answer_message == message
 
 
 @pytest.mark.asyncio
@@ -235,10 +226,7 @@ async def test_command_cmd_rate_worst():
     calls = await requester.query(MESSAGE.as_object(text="Очень плохо!"))
     answer_message = calls.send_message.fetchone().text
     message = "Спасибо! Нам очень жаль, что сервис не смог справиться, с последующими обновлениями качество вырастет"  # noqa: E501
-    assert (
-        answer_message
-        == message
-    )
+    assert answer_message == message
 
 
 @pytest.mark.asyncio
