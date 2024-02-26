@@ -238,6 +238,7 @@ class BaseTrainer:
         torch.save(ckpt, ckpt_path / Path(fname))
 
         if not self._ckpt_replace:
+            del ckpt
             return
 
         all_ckpt = list(ckpt_path.glob("*.ckpt"))
@@ -299,8 +300,8 @@ class BaseTrainer:
             )  # TODO: fix return all to only of dpt output adapter
             if self._metrics_on_train:
                 scores.append(
-                    self.compute_score(self.dict_to_cpu(pred), gt.to("cpu"))
-                )  # TODO: fix it since now returns only 1 metric by interface
+                    self.compute_score(pred, gt)
+                )  
 
             loss = self.compute_loss(pred, gt)
             loss.backward()

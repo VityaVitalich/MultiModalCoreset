@@ -50,7 +50,8 @@ class RgbDepthTrainer(BaseTrainer):
         # map to the original scale
         # preds = preds * NYU_STD + NYU_MEAN
         # target = target * NYU_STD + NYU_MEAN
-        preds = model_outputs["depth"]
+        preds = model_outputs["depth"].to('cpu')
+        target = target.to('cpu')
         mask_valid = None
 
         if mask_valid is None:
