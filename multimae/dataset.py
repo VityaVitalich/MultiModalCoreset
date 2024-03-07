@@ -6,47 +6,24 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 
 
-class FirstChannelTransform:
-    def __init__(self):
-        pass
-
-    def __call__(self, x: torch.Tensor):
-        return x[0]
-
-
-class LongTransform:
-    def __init__(self):
-        pass
-
-    def __call__(self, x: torch.Tensor):
-        return x.long()
-
-
-class Randomizer:
-    def __init__(self, p, transform):
-        self.p = p
-        self.transform = transform
-
-    def __call__(self, img):
-        if np.random.binomial(1, p=self.p):
-            return self.transform(img)
-        return img
-
-
 class MultiModalDataset(Dataset):
     def __init__(
         self,
         root_dir,
         train_transform=None,
         target_transofrm=None,
+        multimodal_augmentations=None,
         input_tasks=["rgb"],
         output_task="depth",
+        training=True
     ):
         self.root_dir = root_dir
         self.train_transform = train_transform
         self.target_transform = target_transofrm
+        self.multimodal_augmentations = multimodal_augmentations
         self.input_tasks = input_tasks
         self.output_task = output_task
+        self.training = training
         self.all_tasks = input_tasks + [output_task]
         for task_name in self.all_tasks:
             task_path = os.path.join(root_dir, task_name)
@@ -85,4 +62,19 @@ class MultiModalDataset(Dataset):
         if self.target_transform:
             y = self.target_transform(y)
 
+        if self.multimodal_augmentations and self.training:
+            sample_dict, y = self.make_augmentations(sample_dict, y)
+
         return sample_dict, y
+
+    def make_augmentations(self, sample_dict, y):
+        for augmentation in self.multimodal_augmentations:
+            #print(augmentation)
+            augmentation.set_param()
+            for task, img in sample_dict.items():
+                sample_dict[task] = augmentation(img, modality=task)
+            y = augmentation(y, modality=self.output_task)
+            #print('completed')
+
+        return sample_dict, y
+        

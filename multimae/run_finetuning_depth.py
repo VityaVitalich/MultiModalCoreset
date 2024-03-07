@@ -5,7 +5,8 @@ import os
 import torch.nn as nn
 from functools import partial
 from input_adapters import PatchedInputAdapter, SemSegInputAdapter
-from dataset import MultiModalDataset, LongTransform, FirstChannelTransform, Randomizer
+from dataset import MultiModalDataset
+from transforms import MultiRandomRotate, MultiHorizontalFlip, MultiVerticalFlip, DepthNormalizer, LongTransform, FirstChannelTransform
 from torchvision import transforms
 from output_adapters import DPTOutputAdapter, ConvNeXtAdapter
 from multimae import multivit_base
@@ -15,8 +16,11 @@ from datetime import datetime
 import logging
 import math
 from configs.depth import depth_configs
+from randomness import seed_everything
 
 config = depth_configs()
+
+seed_everything(seed=config.seed)
 
 
 if __name__ == "__main__":
@@ -166,12 +170,9 @@ if __name__ == "__main__":
                 transforms.ToTensor(),
                 transforms.Resize((224, 224)),
                 transforms.Normalize(
-                    mean=[121.1943975, 120.18005528, 118.44828826],
-                    std=[23.01586477, 22.23779258, 22.15062455],
-                ),
-                Randomizer(p=0.5, transform=transforms.RandomRotation(degrees=90)),
-                transforms.RandomHorizontalFlip(p=0.5),
-                transforms.RandomVerticalFlip(p=0.5),
+                    mean=[0.4753, 0.4713, 0.4645],
+                    std=[0.0903, 0.0872, 0.0869],
+                )
             ]
         ),
         "semseg": transforms.Compose(
@@ -180,19 +181,20 @@ if __name__ == "__main__":
                 transforms.Resize(
                     (224, 224), interpolation=transforms.InterpolationMode.NEAREST
                 ),
-                Randomizer(
-                    p=0.5, transform=transforms.RandomRotation(degrees=90, fill=255)
-                ),
-                transforms.RandomHorizontalFlip(p=0.5),
-                transforms.RandomVerticalFlip(p=0.5),
                 FirstChannelTransform(),
                 LongTransform(),
             ]
         ),
     }
     target_transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Resize((224, 224))]
+        [transforms.ToTensor(), transforms.Resize((224, 224)), DepthNormalizer()]
     )
+
+    multimodal_transforms = [
+            MultiHorizontalFlip(0.5),
+            MultiVerticalFlip(0.5),
+            MultiRandomRotate(0.5, 90)
+        ]
 
     ### MAKE DATASETS ###
 
@@ -202,6 +204,8 @@ if __name__ == "__main__":
         output_task=out_domains[0],
         train_transform=train_transforms,
         target_transofrm=target_transform,
+        multimodal_augmentations=multimodal_transforms,
+        training=True
     )
     val_dataset = MultiModalDataset(
         root_dir=config.val_dir,
@@ -209,13 +213,14 @@ if __name__ == "__main__":
         output_task=out_domains[0],
         train_transform=train_transforms,
         target_transofrm=target_transform,
+        training=False
     )
 
     bs = config.batch_size
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=bs, shuffle=True
+        train_dataset, batch_size=bs, shuffle=True, drop_last=True
     )
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bs, shuffle=False)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bs, shuffle=False, drop_last=False)
 
     ### SET OPTIMIZER ###
 
@@ -237,7 +242,7 @@ if __name__ == "__main__":
         val_loader=val_loader,
         run_name=run_name,
         ckpt_dir=Path(log_dir).parent / "ckpt",
-        ckpt_replace=config.save_every_epoch,
+        ckpt_replace= not config.save_every_epoch,
         ckpt_resume=None,
         ckpt_track_metric="rmse",
         metrics_on_train=True,

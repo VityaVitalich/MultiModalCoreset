@@ -31,4 +31,5 @@ def depth_configs():
     config.train_dir = "../../data/dq/clevr_complex/train"
     config.val_dir = "../../data/dq/clevr_complex/val"
 
+    config.seed = 0xAB0BA
     return config
