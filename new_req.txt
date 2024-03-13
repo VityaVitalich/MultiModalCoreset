@@ -1,0 +1,13 @@
+fastapi==0.110.0
+ml-collections==0.1.1
+numpy==1.26.1
+timm==0.3.2
+tokenizers==0.15.0
+torchvision==0.14.1
+torch==1.13.1
+typing_extensions==4.8.0
+uvicorn==0.28.0
+tqdm==4.66.1
+gunicorn
+einops
+python-multipart
