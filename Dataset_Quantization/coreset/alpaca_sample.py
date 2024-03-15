@@ -22,7 +22,8 @@ def dataset_quantization(data, ratio=0.02, k=50):
     indices_original = np.arange(len(data))
     indices = indices_original.copy()
 
-    sim_matrix = lambda a, b: embeddings[a] @ embeddings[b].T
+    def sim_matrix(a, b):
+        return embeddings[a] @ embeddings[b].T
 
     # bin generation
     bins = []
@@ -66,7 +67,7 @@ if __name__ == "__main__":
         n = int(total_len * args.ratio)
         data = random_sample(data, n=n)
         print(f"Random sample: {len(data)} examples")
-        utils.jdump(data, f"alpaca_data_random.json")
+        utils.jdump(data, "alpaca_data_random.json")
     # DQ
     else:
         k = args.k

@@ -80,7 +80,7 @@ if __name__ == "__main__":
     data = utils.jload("alpaca_data.json")
     index = args.index
     nums = args.nums
-    data = data[nums * index : nums * (index + 1)]
+    data = data[nums * index:nums * (index + 1)]
     print(f"Processing {len(data)} examples from index {index * nums}")
 
     embeds = []

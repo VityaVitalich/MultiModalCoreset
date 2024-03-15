@@ -12,8 +12,9 @@ if __name__ == "__main__":
 
             os.system(
                 f"python -u quantize_pixel.py     --data CIFAR10 --data_path /home/data/dq/cifar-10-batches-py/  \
-            --output_dir ./results/pixel_quantized_cifar_{mask_ratio} --model mae_vit_large_patch16   \
-                --resume ./pretrained/mae_visualize_vit_large_ganloss.pth --batch_size 512     --mask_ratio {mask_ratio} --cam_mask"
+                --output_dir ./results/pixel_quantized_cifar_{mask_ratio} --model mae_vit_large_patch16   \
+                --resume ./pretrained/mae_visualize_vit_large_ganloss.pth --batch_size 512  \
+                --mask_ratio {mask_ratio} --cam_mask"
             )
 
         select_indices_path = (

@@ -1,6 +1,5 @@
 import torch.nn as nn
-import torch.nn.functional as F
-from torch import set_grad_enabled, flatten, Tensor
+from torch import set_grad_enabled, Tensor
 from .nets_utils import EmbeddingRecorder
 from timm.models import vision_transformer
 

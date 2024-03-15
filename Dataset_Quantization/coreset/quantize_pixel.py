@@ -5,7 +5,6 @@ from tqdm import tqdm
 
 import warnings
 
-warnings.filterwarnings("ignore")
 
 import torch
 import torchvision
@@ -15,6 +14,8 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CIFAR10, ImageFolder
 
 import mae_models
+
+warnings.filterwarnings("ignore")
 
 
 def get_args_parser():

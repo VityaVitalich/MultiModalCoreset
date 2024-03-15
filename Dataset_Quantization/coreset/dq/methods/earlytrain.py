@@ -1,5 +1,5 @@
 from .coresetmethod import CoresetMethod
-import torch, time
+import torch
 from torch import nn
 import numpy as np
 from copy import deepcopy

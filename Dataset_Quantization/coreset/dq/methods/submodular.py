@@ -78,7 +78,7 @@ class Submodular(EarlyTrain):
             batch_size=self.args.selection_batch,
             num_workers=self.args.workers,
         )
-        sample_num = self.n_train if index is None else len(index)
+        # sample_num = self.n_train if index is None else len(index)
 
         self.embedding_dim = self.model.get_last_layer().in_features
 

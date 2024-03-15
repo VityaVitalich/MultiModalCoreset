@@ -73,7 +73,7 @@ class FacilityLocation(SubmodularFunction):
 
     def calc_gain_batch(self, idx_gain, selected, **kwargs):
         batch_idx = ~self.all_idx
-        batch_idx[0 : kwargs["batch"]] = True
+        batch_idx[0:kwargs["batch"]] = True
         gains = np.maximum(
             0.0,
             self.similarity_kernel(batch_idx, idx_gain)
@@ -81,7 +81,7 @@ class FacilityLocation(SubmodularFunction):
         ).sum(axis=0)
         for i in range(kwargs["batch"], self.n, kwargs["batch"]):
             batch_idx = ~self.all_idx
-            batch_idx[i * kwargs["batch"] : (i + 1) * kwargs["batch"]] = True
+            batch_idx[i * kwargs["batch"]:(i + 1) * kwargs["batch"]] = True
             gains += np.maximum(
                 0.0,
                 self.similarity_kernel(batch_idx, idx_gain)
@@ -94,7 +94,8 @@ class FacilityLocation(SubmodularFunction):
             self.cur_max,
             np.max(self.similarity_kernel(self.all_idx, new_selection), axis=1),
         )
-        # self.cur_max = np.max(np.append(self.cur_max.reshape(-1, 1), self.similarity_kernel(self.all_idx, new_selection), axis=1), axis=1)
+        # self.cur_max = np.max(np.append(self.cur_max.reshape(-1, 1),
+        # self.similarity_kernel(self.all_idx, new_selection), axis=1), axis=1)
 
 
 class GraphCut(SubmodularFunction):
