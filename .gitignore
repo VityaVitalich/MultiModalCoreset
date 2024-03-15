@@ -6,6 +6,8 @@ ckpt/
 tmp/
 logs/
 model_ckpt/
+data_cifar/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
