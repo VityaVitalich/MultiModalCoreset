@@ -62,7 +62,8 @@ class SpatialOutputAdapter(nn.Module):
     :param norm_layer: Type of normalization layer
     :param use_task_queries: When set to True, adds task specific tokens from encoder (if available)
         to the corresponding query entries
-    :param task: Task for which encoder tokens are added to the queries of the decoder (e.g. RGB if decoder is used for RGB)
+    :param task: Task for which encoder tokens are added to the queries of the decoder
+    (e.g. RGB if decoder is used for RGB)
     :param context_tasks: Tasks / modalities from the encoder. Used to create learned embeddings for each task.
     :param use_xattn: When set to True, attend to the tokens from the encoder through a cross-attention layer
     """
@@ -300,7 +301,7 @@ class SpatialOutputAdapter(nn.Module):
             context_tokens = torch.cat(
                 [
                     context_tokens_without_global,
-                    context_tokens[:, -input_info["num_global_tokens"] :],
+                    context_tokens[:, -input_info["num_global_tokens"]:],
                 ],
                 dim=1,
             )
@@ -564,7 +565,7 @@ class SegmenterMaskTransformerAdapter(nn.Module):
         x = self.decoder_norm(x)
 
         patches = self.patch_proj(x[:, : -self.num_classes])
-        cls_seg_feat = self.classes_proj(x[:, -self.num_classes :])
+        cls_seg_feat = self.classes_proj(x[:, -self.num_classes:])
 
         patches = F.normalize(patches, dim=2, p=2)
         cls_seg_feat = F.normalize(cls_seg_feat, dim=2, p=2)
@@ -880,11 +881,11 @@ class DPTOutputAdapter(nn.Module):
         layers = [encoder_tokens[hook] for hook in self.hooks]
 
         # Extract only task-relevant tokens and ignore global tokens.
-        layers = [self.adapt_tokens(l, input_info) for l in layers]
+        layers = [self.adapt_tokens(layer, input_info) for layer in layers]
 
         # Reshape tokens to spatial representation
         layers = [
-            rearrange(l, "b (nh nw) c -> b c nh nw", nh=N_H, nw=N_W) for l in layers
+            rearrange(layer, "b (nh nw) c -> b c nh nw", nh=N_H, nw=N_W) for layer in layers
         ]
 
         # Postprocess activations
@@ -899,6 +900,7 @@ class DPTOutputAdapter(nn.Module):
         path_2 = self.scratch.refinenet2(path_3, layers[1])
         path_1 = self.scratch.refinenet1(path_2, layers[0])
 
+        print("path1", path_1)
         # Output head
         out = self.head(path_1)
 

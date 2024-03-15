@@ -51,7 +51,7 @@ def interpolate_pos_embed_vit(model, checkpoint_model):
 
 
 def interpolate_pos_embed_multimae(model, checkpoint_model):
-    pattern = "input_adapters\.(.*)\.pos_emb"
+    pattern = "input_adapters\.(.*)\.pos_emb"  # noqa:W605
     matched_keys = [k for k in checkpoint_model if bool(re.match(pattern, k))]
 
     for key in matched_keys:

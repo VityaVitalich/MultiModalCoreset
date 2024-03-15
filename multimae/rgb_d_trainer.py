@@ -1,7 +1,7 @@
 from base_trainer import BaseTrainer
 import logging
 import torch
-from typing import Any, Dict, List, Literal, Union, Tuple
+from typing import Any, Dict, List, Literal, Union
 
 logger = logging.getLogger("MultiMAE")
 
@@ -46,12 +46,12 @@ class RgbDepthTrainer(BaseTrainer):
             A dict of metric name and metric value(s).
         """
 
-        ### TAKEN FROM NYU METRICS MULTIMAE https://github.com/EPFL-VILAB/MultiMAE/blob/main/run_finetuning_depth.py
+        # TAKEN FROM NYU METRICS MULTIMAE https://github.com/EPFL-VILAB/MultiMAE/blob/main/run_finetuning_depth.py
         # map to the original scale
         # preds = preds * NYU_STD + NYU_MEAN
         # target = target * NYU_STD + NYU_MEAN
-        preds = model_outputs["depth"].to('cpu')
-        target = target.to('cpu')
+        preds = model_outputs["depth"].to("cpu")
+        target = target.to("cpu")
         mask_valid = None
 
         if mask_valid is None:

@@ -299,9 +299,7 @@ class BaseTrainer:
                 task_dict, return_all_layers=True
             )  # TODO: fix return all to only of dpt output adapter
             if self._metrics_on_train:
-                scores.append(
-                    self.compute_score(pred, gt)
-                )  
+                scores.append(self.compute_score(pred, gt))
 
             loss = self.compute_loss(pred, gt)
             loss.backward()

@@ -14,8 +14,9 @@ def seed_everything(
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
- #   torch.backends.cudnn.benchmark = not avoid_benchmark_noise
-  #  torch.use_deterministic_algorithms(only_deterministic_algorithms, warn_only=True)
+
+#   torch.backends.cudnn.benchmark = not avoid_benchmark_noise
+#  torch.use_deterministic_algorithms(only_deterministic_algorithms, warn_only=True)
 
 
 def get_global_state():

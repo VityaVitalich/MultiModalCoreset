@@ -21,7 +21,7 @@ from functools import partial
 from typing import Dict, List, Optional, Union
 
 import torch
-from einops import rearrange, repeat
+from einops import repeat
 from torch import nn
 from torch.distributions.dirichlet import Dirichlet
 
@@ -329,7 +329,7 @@ class MultiMAE(nn.Module):
             run with mixed precision turned off for stability reasons.
         """
 
-        ## Processing input modalities
+        # Processing input modalities
         # If input x is a Tensor, assume it's RGB
         x = {"rgb": x} if isinstance(x, torch.Tensor) else x
 
@@ -369,7 +369,7 @@ class MultiMAE(nn.Module):
                 [tensor.shape[1] for tensor in input_task_tokens.values()]
             )
 
-        ## Generating masks
+        # Generating masks
         if task_masks is None:
             task_masks, ids_keep, ids_restore = self.generate_random_masks(
                 input_task_tokens,
@@ -400,10 +400,10 @@ class MultiMAE(nn.Module):
         global_tokens = repeat(self.global_tokens, "() n d -> b n d", b=B)
         input_tokens = torch.cat([input_tokens, global_tokens], dim=1)
 
-        ## Transformer forward pass
+        # Transformer forward pass
         encoder_tokens = self.encoder(input_tokens)
 
-        ## Output decoders
+        # Output decoders
         if self.output_adapters is None:
             return encoder_tokens, task_masks
 

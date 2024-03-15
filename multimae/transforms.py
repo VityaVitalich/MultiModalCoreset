@@ -1,10 +1,8 @@
-import os
 import numpy as np
-from PIL import Image
 import torch
 from torchvision import transforms
-from torch.utils.data import Dataset
 import torchvision.transforms.functional as F
+
 
 class FirstChannelTransform:
     def __init__(self):
@@ -32,15 +30,17 @@ class Randomizer:
             return self.transform(img)
         return img
 
-class DepthNormalizer():
+
+class DepthNormalizer:
     def __init__(self):
         pass
 
     def __call__(self, img):
         img = img.float() / (2**15 - 1)
-        return img 
+        return img
 
-class MultiHorizontalFlip():
+
+class MultiHorizontalFlip:
     def __init__(self, p):
         self.p = p
 
@@ -56,28 +56,32 @@ class MultiHorizontalFlip():
         else:
             self.flip = False
 
-class MultiRandomRotate():
+
+class MultiRandomRotate:
     def __init__(self, p, angle):
         self.max_angle = angle
         self.p = p
-        self.expand=False
-        self.center=None
-        self.interpolation=transforms.InterpolationMode.NEAREST
-        self.fill_values = {
-            'rgb': -5.4,
-            'semseg': 255,
-            'depth': 0
-        }
+        self.expand = False
+        self.center = None
+        self.interpolation = transforms.InterpolationMode.NEAREST
+        self.fill_values = {"rgb": -5.4, "semseg": 255, "depth": 0}
 
     def __call__(self, img, modality, **kwargs):
         if self.rotate:
             fill_value = self.fill_values[modality]
-            if modality == 'semseg':
+            if modality == "semseg":
                 img = img.unsqueeze(0)
 
-            output = F.rotate(img, self.cur_angle, self.interpolation, self.expand, self.center, fill_value)
-            
-            if modality == 'semseg':
+            output = F.rotate(
+                img,
+                self.cur_angle,
+                self.interpolation,
+                self.expand,
+                self.center,
+                fill_value,
+            )
+
+            if modality == "semseg":
                 return output.squeeze(0)
 
             return output
@@ -91,7 +95,8 @@ class MultiRandomRotate():
         else:
             self.rotate = False
 
-class MultiVerticalFlip():
+
+class MultiVerticalFlip:
     def __init__(self, p):
         self.p = p
 

@@ -1,8 +1,5 @@
 import os
-import numpy as np
 from PIL import Image
-import torch
-from torchvision import transforms
 from torch.utils.data import Dataset
 
 
@@ -15,7 +12,7 @@ class MultiModalDataset(Dataset):
         multimodal_augmentations=None,
         input_tasks=["rgb"],
         output_task="depth",
-        training=True
+        training=True,
     ):
         self.root_dir = root_dir
         self.train_transform = train_transform
@@ -69,12 +66,11 @@ class MultiModalDataset(Dataset):
 
     def make_augmentations(self, sample_dict, y):
         for augmentation in self.multimodal_augmentations:
-            #print(augmentation)
+            # print(augmentation)
             augmentation.set_param()
             for task, img in sample_dict.items():
                 sample_dict[task] = augmentation(img, modality=task)
             y = augmentation(y, modality=self.output_task)
-            #print('completed')
+            # print('completed')
 
         return sample_dict, y
-        

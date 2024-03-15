@@ -1,12 +1,16 @@
 from rgb_d_trainer import RgbDepthTrainer
 import torch
-import numpy as np
-import os
-import torch.nn as nn
 from functools import partial
 from input_adapters import PatchedInputAdapter, SemSegInputAdapter
 from dataset import MultiModalDataset
-from transforms import MultiRandomRotate, MultiHorizontalFlip, MultiVerticalFlip, DepthNormalizer, LongTransform, FirstChannelTransform
+from transforms import (
+    MultiRandomRotate,
+    MultiHorizontalFlip,
+    MultiVerticalFlip,
+    DepthNormalizer,
+    LongTransform,
+    FirstChannelTransform,
+)
 from torchvision import transforms
 from output_adapters import DPTOutputAdapter, ConvNeXtAdapter
 from multimae import multivit_base
@@ -14,7 +18,6 @@ from pos_embed_multi import interpolate_pos_embed_multimae
 from pathlib import Path
 from datetime import datetime
 import logging
-import math
 from configs.depth import depth_configs
 from randomness import seed_everything
 
@@ -24,13 +27,12 @@ seed_everything(seed=config.seed)
 
 
 if __name__ == "__main__":
-    ### SETUP LOGGING ###
+    # SETUP LOGGING ###
 
     run_name = config.run_name
     log_dir = config.log_dir
     run_name += f"_{datetime.now():%F_%T}"
 
-    ### SETUP LOGGING ###
     ch = logging.StreamHandler()
     cons_lvl = getattr(logging, config.cons_lvl)
     ch.setLevel(cons_lvl)
@@ -55,7 +57,7 @@ if __name__ == "__main__":
 
     device = config.device
 
-    ### SETUP DOMAIN ADAPTERS ###
+    # SETUP DOMAIN ADAPTERS ###
 
     DOMAIN_CONF = {
         "rgb": {
@@ -94,7 +96,7 @@ if __name__ == "__main__":
     patch_size = config.patch_size
     input_size = config.input_size
 
-    ### INPUT ADAPTERS ###
+    # INPUT ADAPTERS ###
 
     input_adapters = {
         domain: DOMAIN_CONF[domain]["input_adapter"](
@@ -105,7 +107,7 @@ if __name__ == "__main__":
         for domain in in_domains
     }
 
-    ### MAKE OUTPUT ADAPTERS ###
+    # MAKE OUTPUT ADAPTERS ###
 
     decoder_main_tasks = config.decoder_main_tasks
 
@@ -132,14 +134,14 @@ if __name__ == "__main__":
         for domain in out_domains
     }
 
-    ### SET MODEL ###
+    # SET MODEL ###
     model_name = "multivit_base"
     drop_path_encoder = 0.0
     model = multivit_base(
         input_adapters=input_adapters, output_adapters=output_adapters
     )
 
-    ### LOAD CHECKPOINT ###
+    # LOAD CHECKPOINT ###
     finetune_path = config.fine_tune_path
     checkpoint = torch.load(finetune_path, map_location="cpu")
 
@@ -162,7 +164,7 @@ if __name__ == "__main__":
     msg = model.load_state_dict(checkpoint_model, strict=False)
     print(msg)
 
-    ### MAKE TRANSFORMS ###
+    # MAKE TRANSFORMS ###
 
     train_transforms = {
         "rgb": transforms.Compose(
@@ -172,7 +174,7 @@ if __name__ == "__main__":
                 transforms.Normalize(
                     mean=[0.4753, 0.4713, 0.4645],
                     std=[0.0903, 0.0872, 0.0869],
-                )
+                ),
             ]
         ),
         "semseg": transforms.Compose(
@@ -191,12 +193,12 @@ if __name__ == "__main__":
     )
 
     multimodal_transforms = [
-            MultiHorizontalFlip(0.5),
-            MultiVerticalFlip(0.5),
-            MultiRandomRotate(0.5, 90)
-        ]
+        MultiHorizontalFlip(0.5),
+        MultiVerticalFlip(0.5),
+        MultiRandomRotate(0.5, 90),
+    ]
 
-    ### MAKE DATASETS ###
+    # MAKE DATASETS ###
 
     train_dataset = MultiModalDataset(
         root_dir=config.train_dir,
@@ -205,7 +207,7 @@ if __name__ == "__main__":
         train_transform=train_transforms,
         target_transofrm=target_transform,
         multimodal_augmentations=multimodal_transforms,
-        training=True
+        training=True,
     )
     val_dataset = MultiModalDataset(
         root_dir=config.val_dir,
@@ -213,16 +215,18 @@ if __name__ == "__main__":
         output_task=out_domains[0],
         train_transform=train_transforms,
         target_transofrm=target_transform,
-        training=False
+        training=False,
     )
 
     bs = config.batch_size
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=bs, shuffle=True, drop_last=True
     )
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=bs, shuffle=False, drop_last=False)
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset, batch_size=bs, shuffle=False, drop_last=False
+    )
 
-    ### SET OPTIMIZER ###
+    # SET OPTIMIZER ###
 
     lr = config.lr
     decay = config.weight_decay
@@ -232,7 +236,7 @@ if __name__ == "__main__":
         opt, T_max=total_iterations, eta_min=1e-7
     )
 
-    ### SETUP TRAINER ###
+    # SETUP TRAINER ###
 
     total_epochs = config.total_epochs
     trainer = RgbDepthTrainer(
@@ -242,7 +246,7 @@ if __name__ == "__main__":
         val_loader=val_loader,
         run_name=run_name,
         ckpt_dir=Path(log_dir).parent / "ckpt",
-        ckpt_replace= not config.save_every_epoch,
+        ckpt_replace=not config.save_every_epoch,
         ckpt_resume=None,
         ckpt_track_metric="rmse",
         metrics_on_train=True,

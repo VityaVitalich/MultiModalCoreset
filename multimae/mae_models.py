@@ -100,7 +100,8 @@ class MaskedAutoencoderViT(nn.Module):
         )  # decoder to patch
 
         # self.decoder_norm_extra = norm_layer(patch_size ** 2 * in_chans)
-        # self.decoder_pred_extra = nn.Linear(patch_size ** 2 * in_chans, patch_size ** 2 * in_chans, bias=True)  # decoder to patch
+        # self.decoder_pred_extra = nn.Linear(patch_size ** 2 * in_chans,
+        # patch_size ** 2 * in_chans, bias=True)  # decoder to patch
         # --------------------------------------------------------------------------
 
         self.norm_pix_loss = norm_pix_loss

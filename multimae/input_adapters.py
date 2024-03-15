@@ -14,12 +14,12 @@
 # https://github.com/facebookresearch/mae
 # --------------------------------------------------------
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from einops import rearrange, repeat
+from einops import rearrange
 
 from multimae_utils import build_2d_sincos_posemb, pair, trunc_normal_
 
