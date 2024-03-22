@@ -205,7 +205,7 @@ if __name__ == "__main__":
         input_tasks=in_domains,
         output_task=out_domains[0],
         train_transform=train_transforms,
-        target_transofrm=target_transform,
+        target_transform=target_transform,
         multimodal_augmentations=multimodal_transforms,
         training=True,
     )
@@ -214,7 +214,7 @@ if __name__ == "__main__":
         input_tasks=in_domains,
         output_task=out_domains[0],
         train_transform=train_transforms,
-        target_transofrm=target_transform,
+        target_transform=target_transform,
         training=False,
     )
 

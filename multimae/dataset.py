@@ -8,7 +8,7 @@ class MultiModalDataset(Dataset):
         self,
         root_dir,
         train_transform=None,
-        target_transofrm=None,
+        target_transform=None,
         multimodal_augmentations=None,
         input_tasks=["rgb"],
         output_task="depth",
@@ -16,7 +16,7 @@ class MultiModalDataset(Dataset):
     ):
         self.root_dir = root_dir
         self.train_transform = train_transform
-        self.target_transform = target_transofrm
+        self.target_transform = target_transform
         self.multimodal_augmentations = multimodal_augmentations
         self.input_tasks = input_tasks
         self.output_task = output_task
