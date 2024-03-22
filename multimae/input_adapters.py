@@ -21,7 +21,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
 
-from multimae_utils import build_2d_sincos_posemb, pair, trunc_normal_
+from .multimae_utils import build_2d_sincos_posemb, pair, trunc_normal_
 
 
 class PatchedInputAdapter(nn.Module):
