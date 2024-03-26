@@ -39,4 +39,38 @@ url = "http://127.0.0.1:8886/rgb_semantic_inference/"
 response = requests.get(url, files=files)
 ```
 
-4) 
+4) Obtain embeddings of MultiMAE without prediction
+
+GET method at ```/rgb_embeddings/```
+Expects RGB image to be provided the same way as in RGB inference. Output contains "embeddings" key that contains embedding in type of python list
+
+5) Fine-tune RGB only model (Beta)
+
+POST method at ```/fine_tune_rgb/```
+Fine-tunes loaded model with provided images and corresponding targets. Access Token Should be provided as well. For now parameters of fine-tuning could not be changed (will fix it later). For examle, running from python
+
+```python
+
+rgb_path = "your rgb path"
+depth_path = "your depth path"
+url = "http://127.0.0.1:8886/fine_tune_rgb/"
+
+files = []
+# add rgb image
+files.append(
+    ("rgb_ls",
+        (f"rgb_image{i}.png", open(rgb_path, "rb"),
+            "image/png"))
+)
+# add depth image
+files.append(
+    ("depth_ls",
+        (f"depth_image{i}.png", open(depth_path, "rb"),
+            "image/png"))
+)
+# set auth token
+data = {"token": "my_token"}
+
+response = requests.post(url, files=files, data=data)
+```
+The response will contain message and list with losses in "losses" key. If the fine-tuning message is succesful, then current model is already fine-tuned
