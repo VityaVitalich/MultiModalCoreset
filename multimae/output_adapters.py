@@ -24,7 +24,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange, repeat
 
-from multimae_utils import (
+from .multimae_utils import (
     Block,
     CrossAttention,
     Mlp,
@@ -32,7 +32,7 @@ from multimae_utils import (
     pair,
     trunc_normal_,
 )
-from output_adapter_utils import (
+from .output_adapter_utils import (
     ConvNeXtBlock,
     Interpolate,
     make_fusion_block,
@@ -900,7 +900,6 @@ class DPTOutputAdapter(nn.Module):
         path_2 = self.scratch.refinenet2(path_3, layers[1])
         path_1 = self.scratch.refinenet1(path_2, layers[0])
 
-        print("path1", path_1)
         # Output head
         out = self.head(path_1)
 

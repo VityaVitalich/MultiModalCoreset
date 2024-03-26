@@ -26,7 +26,7 @@ from torch import nn
 from torch.distributions.dirichlet import Dirichlet
 
 
-from multimae_utils import Block, trunc_normal_
+from .multimae_utils import Block, trunc_normal_
 
 __all__ = [
     "pretrain_multimae_base",
