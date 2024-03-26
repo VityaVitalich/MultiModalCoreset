@@ -1,0 +1,14 @@
+For installing project first refer to the image https://hub.docker.com/r/vityavitalich/dq_image
+
+To start the container run the following command
+
+docker run --name="<your name>" -it -p <desired port mapping> vityavitalich/dq_image:latest
+
+Inside the docker container the main working directory is /mm_coreset that contains the same files as repo and checkpoints. As well, python has all desired libraries installed
+
+To run fine-tuning refer to manual in README.md for multimae
+
+To run the TG bot refer to manuals in bot/README.md
+
+To start the FastAPI move to fastapi directory and run
+gunicorn main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000
