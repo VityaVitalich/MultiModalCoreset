@@ -3,17 +3,17 @@ import torch
 from functools import partial
 from torchvision import transforms
 
-sys.path.append("../multimae/")
+sys.path.append("../")
 
-from input_adapters import PatchedInputAdapter, SemSegInputAdapter  # noqa:E402
-from transforms import (  # noqa:E402
+from multimae.input_adapters import PatchedInputAdapter, SemSegInputAdapter  # noqa:E402
+from multimae.transforms import (  # noqa:E402
     DepthNormalizer,
     LongTransform,
     FirstChannelTransform,
 )  # noqa:E402
-from output_adapters import DPTOutputAdapter, ConvNeXtAdapter  # noqa:E402
-from multimae import multivit_base  # noqa:E402
-from pos_embed_multi import interpolate_pos_embed_multimae  # noqa:E402
+from multimae.output_adapters import DPTOutputAdapter, ConvNeXtAdapter  # noqa:E402
+from multimae.multimae import multivit_base  # noqa:E402
+from multimae.pos_embed_multi import interpolate_pos_embed_multimae  # noqa:E402
 
 multi_path = "./ckpt/multi.ckpt"
 rgb_path = "./ckpt/rgb.ckpt"
