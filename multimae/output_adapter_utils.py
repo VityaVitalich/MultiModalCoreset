@@ -13,7 +13,7 @@
 import torch
 import torch.nn as nn
 
-from .multimae_utils import DropPath
+from multimae_utils import DropPath
 
 
 class ConvNeXtBlock(nn.Module):
