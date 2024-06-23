@@ -4,15 +4,15 @@ import ml_collections
 def depth_configs():
     config = ml_collections.ConfigDict()
 
-    config.run_name = "debug-only-semseg"
+    config.run_name = "rgb-semseg-40epoch_coreset_sum_20"
     config.log_dir = "./logs/"
     config.cons_lvl = "INFO"
     config.file_lvl = "INFO"
-    config.save_every_epoch = False
+    config.save_every_epoch = True
 
     config.device = "cuda"
 
-    config.in_domains = ["rgb", "semseg"]
+    config.in_domains = ["semseg", "rgb"]
     config.out_domains = ["depth"]
     config.decoder_main_tasks = ["rgb", "semseg"]
 
@@ -21,15 +21,16 @@ def depth_configs():
     config.patch_size = 16
     config.input_size = 224
 
-    config.fine_tune_path = "../../data/dq/mae-b_dec512d8b_1600e_multivit-c477195b.pth"
+    config.fine_tune_path = "/home/cache/data/dq/multimae.pth"
 
-    config.lr = 3e-4
-    config.weight_decay = 1e-4
-    config.total_epochs = 1
-    config.batch_size = 16
+    config.lr = 5e-5
+    config.weight_decay = 0
+    config.total_epochs = 40
+    config.batch_size = 128
 
-    config.train_dir = "../../data/dq/clevr_complex/train"
-    config.val_dir = "../../data/dq/clevr_complex/val"
+    config.train_dir = "/home/cache/data/dq/clevr/train"
+    config.subset_idx = "/home/cache/data/dq/clevr/train/multimae_sum_index_20.pickle"
+    config.val_dir = "/home/cache/data/dq/clevr/val"
 
     config.seed = 0xAB0BA
     return config
@@ -37,6 +38,7 @@ def depth_configs():
 def embedding_configs():
     config = ml_collections.ConfigDict()
 
+    config.aggregation = 'sum'
     config.device = "cuda"
 
     config.in_domains = ["rgb", "semseg"]
@@ -48,12 +50,12 @@ def embedding_configs():
     config.patch_size = 16
     config.input_size = 224
 
-    config.fine_tune_path = "/home/MultiModalCoreset/fastapi/ckpt/multi.ckpt"
+    config.fine_tune_path = "/home/MultiModalCoreset/multimae/ckpt/rgb-semseg-40epoch_2024-04-27_21:21:34/epoch__0036_-_rmse__0.003263.ckpt"
 
-    config.batch_size = 64
+    config.batch_size = 1024
 
-    config.train_dir = "/home/data/dq/clevr_complex/val"
-    config.embed_save_path = '/home/data/dq/clevr_complex/multimae_embeds.npy'
+    config.train_dir = "/home/cache/data/dq/clevr/train"
+    config.embed_save_path = '/home/cache/data/dq/clevr/train/multimae_sum_embeds.npy'
 
     config.seed = 0xAB0BA
     return config

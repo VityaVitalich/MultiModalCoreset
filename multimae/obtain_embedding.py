@@ -23,7 +23,7 @@ from tqdm import tqdm
 import numpy as np
 
 @torch.no_grad()
-def obtain_embeddings(model, loader, device):
+def obtain_embeddings(model, loader, device, aggregation='none'):
     all_embeddings = []
 
     for i, (inp, gt) in tqdm(enumerate(loader), total=len(loader)):
@@ -36,7 +36,14 @@ def obtain_embeddings(model, loader, device):
         # ) 
         input_tokens, input_info = model.process_input(task_dict)
         encoder_tokens = model.encoder(input_tokens).cpu()
-        encoder_tokens = encoder_tokens.reshape(encoder_tokens.size(0), -1).numpy()
+        if aggregation == 'none':
+            encoder_tokens = encoder_tokens.reshape(encoder_tokens.size(0), -1).numpy()
+        elif aggregation == 'sum':
+            encoder_tokens = encoder_tokens.sum(dim=1).numpy()
+        elif aggregation == 'mean':
+            encoder_tokens = encoder_tokens.mean(dim=1).numpy()
+        else:
+            raise AttributeError(f'Unknown aggregation {aggregation}')
         all_embeddings.append(encoder_tokens)
 
     return np.vstack(all_embeddings)
@@ -186,7 +193,7 @@ if __name__ == "__main__":
         train_dataset, batch_size=bs, shuffle=False, drop_last=False
     )
 
-    embeds = obtain_embeddings(model, train_loader, device)
+    embeds = obtain_embeddings(model, train_loader, device, aggregation=config.aggregation)
     np.save(config.embed_save_path, embeds)
 
 

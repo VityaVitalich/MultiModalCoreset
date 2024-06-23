@@ -1,4 +1,6 @@
 import os
+import numpy as np
+import pickle
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -13,6 +15,7 @@ class MultiModalDataset(Dataset):
         input_tasks=["rgb"],
         output_task="depth",
         training=True,
+        subset_idx=None,
     ):
         self.root_dir = root_dir
         self.train_transform = train_transform
@@ -22,10 +25,18 @@ class MultiModalDataset(Dataset):
         self.output_task = output_task
         self.training = training
         self.all_tasks = input_tasks + [output_task]
+
+        if subset_idx is not None:
+            with open(subset_idx, 'rb') as f:
+                subset_index = pickle.load(f)
+        
         for task_name in self.all_tasks:
             task_path = os.path.join(root_dir, task_name)
             self.__dict__[task_name + "_path"] = task_path
-            self.__dict__[task_name + "_files"] = sorted(os.listdir(task_path))
+            if subset_idx is not None:
+                self.__dict__[task_name + "_files"] = np.array(sorted(os.listdir(task_path)))[subset_index]
+            else:
+                self.__dict__[task_name + "_files"] = sorted(os.listdir(task_path))
 
     def __len__(self):
         task = self.all_tasks[0]

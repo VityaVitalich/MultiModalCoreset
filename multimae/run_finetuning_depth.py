@@ -208,6 +208,7 @@ if __name__ == "__main__":
         target_transform=target_transform,
         multimodal_augmentations=multimodal_transforms,
         training=True,
+        subset_idx=config.subset_idx
     )
     val_dataset = MultiModalDataset(
         root_dir=config.val_dir,
