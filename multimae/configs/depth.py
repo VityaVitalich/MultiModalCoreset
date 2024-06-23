@@ -28,6 +28,11 @@ def depth_configs():
     config.total_epochs = 40
     config.batch_size = 128
 
+    config.output_adapter = 'linear_depth'
+    config.linear_hidden_dims = [4096, 4096]
+    config.linear_use_norm = True
+    config.linear_aggregation = 'last'
+
     config.train_dir = "/home/cache/data/dq/clevr/train"
     config.subset_idx = "/home/cache/data/dq/clevr/train/multimae_sum_index_20.pickle"
     config.val_dir = "/home/cache/data/dq/clevr/val"

@@ -447,6 +447,59 @@ class LinearOutputAdapter(nn.Module):
         x = self.head(self.norm(x))
         return x
 
+class LinearDepthAdapter(nn.Module):
+    def __init__(self, input_dim, hidden_dims, output_size, aggregation='mean', use_norm=True, **kwargs):
+        """
+        Initializes the LinearAdapter module.
+        
+        Parameters:
+        - input_dim: The dimension of the input image tokens.
+        - hidden_dims: A list of dimensions for the hidden layers.
+        - output_size: The size of the output depth map (e.g., 224 for a 224x224 image).
+        - aggregation: The method to aggregate tokens, either 'mean' or 'first'.
+        """
+        super(LinearAdapter, self).__init__()
+        
+        self.aggregation = aggregation
+        self.output_size = output_size
+        
+        layers = []
+        current_dim = input_dim
+        
+        for hidden_dim in hidden_dims:
+            if use_norm:
+                layers.append(nn.LayerNorm(eps=1e-6))
+            layers.append(nn.Linear(current_dim, hidden_dim))
+            layers.append(nn.ReLU())
+            current_dim = hidden_dim
+        
+        self.feed_forward = nn.Sequential(*layers)
+        self.final_layer = nn.Linear(current_dim, output_size * output_size)
+    
+    def forward(self, image_tokens, **kwargs):
+        """
+        Forward pass of the LinearAdapter module.
+        
+        Parameters:
+        - image_tokens: The input image tokens.
+        - kwargs: Additional keyword arguments (if any).
+        
+        Returns:
+        - depth_map: The output depth map of size (output_size x output_size).
+        """
+        if self.aggregation == 'mean':
+            aggregated_embedding = torch.mean(image_tokens, dim=1)
+        elif self.aggregation == 'last':
+            aggregated_embedding = image_tokens[:, -1]
+        else:
+            raise ValueError("Invalid aggregation method. Use 'mean' or 'last'.")
+        
+        embedding = self.feed_forward(aggregated_embedding)
+        depth_map = self.final_layer(embedding)
+        depth_map = depth_map.view(-1, self.output_size, self.output_size)
+        
+        return depth_map
+
 
 class SegmenterMaskTransformerAdapter(nn.Module):
     """Output adapter inspired by the Segmenter-Mask architecture

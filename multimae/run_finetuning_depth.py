@@ -12,7 +12,7 @@ from transforms import (
     FirstChannelTransform,
 )
 from torchvision import transforms
-from output_adapters import DPTOutputAdapter, ConvNeXtAdapter
+from output_adapters import DPTOutputAdapter, ConvNeXtAdapter, LinearDepthAdapter
 from multimae import multivit_base
 from pos_embed_multi import interpolate_pos_embed_multimae
 from pathlib import Path
@@ -120,9 +120,16 @@ if __name__ == "__main__":
     adapters_dict = {
         "dpt": DPTOutputAdapter,
         "convnext": partial(ConvNeXtAdapter, preds_per_patch=64),
+        "linear_depth": partial(LinearDepthAdapter,
+                                input_dim=768,
+                                hidden_dims=config.linear_hidden_dims,
+                                output_size=input_size, 
+                                aggregation=config.linear_aggregation,
+                                use_norm=config.linear_use_norm
+                                )
     }
 
-    output_adapter = "dpt"
+    output_adapter = config.output_adapter
 
     output_adapters = {
         domain: adapters_dict[output_adapter](
