@@ -27,6 +27,7 @@ def masked_berhu_loss(preds, target, mask_valid=None):
 
 
 class RgbDepthTrainer(BaseTrainer):
+    @torch.no_grad()
     def compute_score(
         self,
         model_outputs: torch.Tensor,

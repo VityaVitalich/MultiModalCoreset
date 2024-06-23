@@ -220,10 +220,10 @@ class BaseTrainer:
         if not ckpt_path.is_dir():
             torch.save(ckpt, ckpt_path)
 
-        assert self._metric_values
+        assert self._val_metric_values
         assert self._loss_values
 
-        metrics = {k: v for k, v in self._metric_values.items() if np.isscalar(v)}
+        metrics = {k: v for k, v in self._val_metric_values.items() if np.isscalar(v)}
         metrics["loss"] = np.mean(self._loss_values)
 
         fname = f"epoch__{self._last_epoch:04d}"
@@ -342,7 +342,7 @@ class BaseTrainer:
         assert self._val_loader is not None, "Set a val loader first"
 
         if len(self._val_loader) == 0:
-            self._metric_values = {"placeholder": 0}
+            self._val_metric_values = {"placeholder": 0}
             return
 
         logger.info("Epoch %04d: validation started", self._last_epoch + 1)
@@ -356,13 +356,13 @@ class BaseTrainer:
                 pred = self.dict_to_cpu(pred)
                 scores.append(self.compute_score(pred, gt))
 
-        self._metric_values = {
+        self._val_metric_values = {
             k: np.mean([d[k].item() for d in scores]) for k in scores[0]
         }
         logger.info(
             "Epoch %04d: validation metrics: %s",
             self._last_epoch + 1,
-            str(self._metric_values),
+            str(self._val_metric_values),
         )
         logger.info("Epoch %04d: validation finished", self._last_epoch + 1)
 
