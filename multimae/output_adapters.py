@@ -24,7 +24,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange, repeat
 
-from .multimae_utils import (
+from multimae_utils import (
     Block,
     CrossAttention,
     Mlp,
@@ -32,7 +32,7 @@ from .multimae_utils import (
     pair,
     trunc_normal_,
 )
-from .output_adapter_utils import (
+from output_adapter_utils import (
     ConvNeXtBlock,
     Interpolate,
     make_fusion_block,
@@ -728,6 +728,7 @@ class DPTOutputAdapter(nn.Module):
         )
         self.head_type = head_type
 
+
         # Actual patch height and width, taking into account stride of input
         self.P_H = max(1, self.patch_size[0] // stride_level)
         self.P_W = max(1, self.patch_size[1] // stride_level)
@@ -868,7 +869,7 @@ class DPTOutputAdapter(nn.Module):
         x = torch.cat(x, dim=-1)
         return x
 
-    def forward(self, encoder_tokens: List[torch.Tensor], input_info: Dict):
+    def forward(self, encoder_tokens: List[torch.Tensor], input_info: Dict, return_embedding=False):
         assert (
             self.dim_tokens_enc is not None
         ), "Need to call init(dim_tokens_enc) function first"
@@ -900,6 +901,8 @@ class DPTOutputAdapter(nn.Module):
         path_2 = self.scratch.refinenet2(path_3, layers[1])
         path_1 = self.scratch.refinenet1(path_2, layers[0])
 
+        if return_embedding:
+            return path_1
         # Output head
         out = self.head(path_1)
 

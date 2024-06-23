@@ -1,4 +1,3 @@
-from rgb_d_trainer import RgbDepthTrainer
 import torch
 from functools import partial
 from input_adapters import PatchedInputAdapter, SemSegInputAdapter
@@ -18,43 +17,43 @@ from pos_embed_multi import interpolate_pos_embed_multimae
 from pathlib import Path
 from datetime import datetime
 import logging
-from configs.depth import depth_configs
+from configs.depth import embedding_configs
 from randomness import seed_everything
+from tqdm import tqdm
+import numpy as np
 
-config = depth_configs()
+@torch.no_grad()
+def obtain_embeddings(model, loader, device, aggregation='none'):
+    all_embeddings = []
+
+    for i, (inp, gt) in tqdm(enumerate(loader), total=len(loader)):
+        inp, gt = inp, gt.to(device)
+
+        task_dict = {k: v.to(device) for k, v in inp.items()}
+
+        # pred = model(
+        #     task_dict, return_all_layers=True
+        # ) 
+        input_tokens, input_info = model.process_input(task_dict)
+        encoder_tokens = model.encoder(input_tokens).cpu()
+        if aggregation == 'none':
+            encoder_tokens = encoder_tokens.reshape(encoder_tokens.size(0), -1).numpy()
+        elif aggregation == 'sum':
+            encoder_tokens = encoder_tokens.sum(dim=1).numpy()
+        elif aggregation == 'mean':
+            encoder_tokens = encoder_tokens.mean(dim=1).numpy()
+        else:
+            raise AttributeError(f'Unknown aggregation {aggregation}')
+        all_embeddings.append(encoder_tokens)
+
+    return np.vstack(all_embeddings)
+
+config = embedding_configs()
 
 seed_everything(seed=config.seed)
 
 
 if __name__ == "__main__":
-    # SETUP LOGGING ###
-
-    run_name = config.run_name
-    log_dir = config.log_dir
-    run_name += f"_{datetime.now():%F_%T}"
-
-    ch = logging.StreamHandler()
-    cons_lvl = getattr(logging, config.cons_lvl)
-    ch.setLevel(cons_lvl)
-    cfmt = logging.Formatter("{levelname:8} - {asctime} - {message}", style="{")
-    ch.setFormatter(cfmt)
-
-    Path(log_dir).mkdir(parents=True, exist_ok=True)
-    log_file = Path(log_dir) / f"{run_name}.log"
-    fh = logging.FileHandler(log_file)
-    file_lvl = getattr(logging, config.file_lvl)
-    fh.setLevel(file_lvl)
-    ffmt = logging.Formatter(
-        "{levelname:8} - {process: ^6} - {name: ^16} - {asctime} - {message}",
-        style="{",
-    )
-    fh.setFormatter(ffmt)
-
-    logger = logging.getLogger("MultiMAE")
-    logger.setLevel(min(file_lvl, cons_lvl))
-    logger.addHandler(ch)
-    logger.addHandler(fh)
-
     device = config.device
 
     # SETUP DOMAIN ADAPTERS ###
@@ -139,26 +138,13 @@ if __name__ == "__main__":
     drop_path_encoder = 0.0
     model = multivit_base(
         input_adapters=input_adapters, output_adapters=output_adapters
-    )
+    ).to(device)
 
     # LOAD CHECKPOINT ###
     finetune_path = config.fine_tune_path
     checkpoint = torch.load(finetune_path, map_location="cpu")
 
     checkpoint_model = checkpoint["model"]
-
-    # # Remove keys for semantic segmentation
-    # for k in list(checkpoint_model.keys()):
-    #     if "semseg" in k:
-    #         del checkpoint_model[k]
-
-    # Remove output adapters
-    for k in list(checkpoint_model.keys()):
-        if "output_adapters" in k:
-            del checkpoint_model[k]
-
-    # Interpolate position embedding
-    interpolate_pos_embed_multimae(model, checkpoint_model)
 
     # Load pre-trained model
     msg = model.load_state_dict(checkpoint_model, strict=False)
@@ -191,27 +177,10 @@ if __name__ == "__main__":
     target_transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Resize((224, 224)), DepthNormalizer()]
     )
-
-    multimodal_transforms = [
-        MultiHorizontalFlip(0.5),
-        MultiVerticalFlip(0.5),
-        MultiRandomRotate(0.5, 90),
-    ]
-
     # MAKE DATASETS ###
 
     train_dataset = MultiModalDataset(
         root_dir=config.train_dir,
-        input_tasks=in_domains,
-        output_task=out_domains[0],
-        train_transform=train_transforms,
-        target_transform=target_transform,
-        multimodal_augmentations=multimodal_transforms,
-        training=True,
-        subset_idx=config.subset_idx
-    )
-    val_dataset = MultiModalDataset(
-        root_dir=config.val_dir,
         input_tasks=in_domains,
         output_task=out_domains[0],
         train_transform=train_transforms,
@@ -221,38 +190,11 @@ if __name__ == "__main__":
 
     bs = config.batch_size
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=bs, shuffle=True, drop_last=True
-    )
-    val_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=bs, shuffle=False, drop_last=False
+        train_dataset, batch_size=bs, shuffle=False, drop_last=False
     )
 
-    # SET OPTIMIZER ###
+    embeds = obtain_embeddings(model, train_loader, device, aggregation=config.aggregation)
+    np.save(config.embed_save_path, embeds)
 
-    lr = config.lr
-    decay = config.weight_decay
-    opt = torch.optim.Adam(model.parameters(), lr, weight_decay=decay)
-    total_iterations = len(train_loader) * config.total_epochs
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        opt, T_max=total_iterations, eta_min=1e-7
-    )
 
-    # SETUP TRAINER ###
 
-    total_epochs = config.total_epochs
-    trainer = RgbDepthTrainer(
-        model=model,
-        optimizer=opt,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        run_name=run_name,
-        ckpt_dir=Path(log_dir).parent / "ckpt",
-        ckpt_replace=not config.save_every_epoch,
-        ckpt_resume=None,
-        ckpt_track_metric="rmse",
-        metrics_on_train=True,
-        total_epochs=total_epochs,
-        device=device,
-    )
-
-    trainer.run()

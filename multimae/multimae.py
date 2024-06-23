@@ -26,7 +26,7 @@ from torch import nn
 from torch.distributions.dirichlet import Dirichlet
 
 
-from .multimae_utils import Block, trunc_normal_
+from multimae_utils import Block, trunc_normal_
 
 __all__ = [
     "pretrain_multimae_base",
@@ -530,6 +530,7 @@ class MultiViT(MultiMAE):
         self,
         x: Union[Dict[str, torch.Tensor], torch.Tensor],
         return_all_layers=False,
+        return_embedding=False,
         **kwargs,
     ):
         """
@@ -538,7 +539,6 @@ class MultiViT(MultiMAE):
         :param x: Input tensor or dictionary of tensors
         :param return_all_layers: Set to True to return all transformer layers
         """
-
         input_tokens, input_info = self.process_input(x)
 
         # Pass tokens through Transformer
@@ -562,6 +562,7 @@ class MultiViT(MultiMAE):
             domain: self.output_adapters[domain](
                 encoder_tokens=encoder_tokens,
                 input_info=input_info,
+                return_embedding=return_embedding
             )
             for domain in self.output_adapters
         }
