@@ -260,6 +260,7 @@ if __name__ == "__main__":
         metrics_on_train=True,
         total_epochs=total_epochs,
         device=device,
+        return_all_layers= (output_adapter == 'dpt')
     )
 
     trainer.run()

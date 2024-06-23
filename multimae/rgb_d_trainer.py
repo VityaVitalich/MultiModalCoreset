@@ -61,7 +61,8 @@ class RgbDepthTrainer(BaseTrainer):
             mask_valid = mask_valid.repeat_interleave(preds.shape[1], 1)
 
         n = mask_valid.sum()
-
+        
+        print(target.size(), preds.size())
         diff = torch.abs(preds - target)
         diff[~mask_valid] = 0
 

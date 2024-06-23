@@ -448,7 +448,7 @@ class LinearOutputAdapter(nn.Module):
         return x
 
 class LinearDepthAdapter(nn.Module):
-    def __init__(self, input_dim, hidden_dims, output_size, aggregation='mean', use_norm=True, **kwargs):
+    def __init__(self, hidden_dims, output_size, aggregation='mean', use_norm=True, **kwargs):
         """
         Initializes the LinearAdapter module.
         
@@ -458,25 +458,29 @@ class LinearDepthAdapter(nn.Module):
         - output_size: The size of the output depth map (e.g., 224 for a 224x224 image).
         - aggregation: The method to aggregate tokens, either 'mean' or 'first'.
         """
-        super(LinearAdapter, self).__init__()
+        super().__init__()
         
         self.aggregation = aggregation
         self.output_size = output_size
+        self.hidden_dims = hidden_dims
+        self.use_norm = use_norm
         
+
+    def init(self, dim_tokens_enc):
+        current_dim = dim_tokens_enc
         layers = []
-        current_dim = input_dim
         
-        for hidden_dim in hidden_dims:
-            if use_norm:
-                layers.append(nn.LayerNorm(eps=1e-6))
+        for hidden_dim in self.hidden_dims:
+            if self.use_norm:
+                layers.append(nn.LayerNorm(current_dim, eps=1e-6))
             layers.append(nn.Linear(current_dim, hidden_dim))
             layers.append(nn.ReLU())
             current_dim = hidden_dim
         
         self.feed_forward = nn.Sequential(*layers)
-        self.final_layer = nn.Linear(current_dim, output_size * output_size)
+        self.final_layer = nn.Linear(current_dim, self.output_size * self.output_size)
     
-    def forward(self, image_tokens, **kwargs):
+    def forward(self, encoder_tokens, **kwargs):
         """
         Forward pass of the LinearAdapter module.
         
@@ -488,15 +492,15 @@ class LinearDepthAdapter(nn.Module):
         - depth_map: The output depth map of size (output_size x output_size).
         """
         if self.aggregation == 'mean':
-            aggregated_embedding = torch.mean(image_tokens, dim=1)
+            aggregated_embedding = torch.mean(encoder_tokens, dim=1)
         elif self.aggregation == 'last':
-            aggregated_embedding = image_tokens[:, -1]
+            aggregated_embedding = encoder_tokens[:, -1]
         else:
             raise ValueError("Invalid aggregation method. Use 'mean' or 'last'.")
         
         embedding = self.feed_forward(aggregated_embedding)
         depth_map = self.final_layer(embedding)
-        depth_map = depth_map.view(-1, self.output_size, self.output_size)
+        depth_map = depth_map.view(-1, self.output_size, self.output_size).unsqueeze(1)
         
         return depth_map
 

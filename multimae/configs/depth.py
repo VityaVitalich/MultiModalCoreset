@@ -4,7 +4,7 @@ import ml_collections
 def depth_configs():
     config = ml_collections.ConfigDict()
 
-    config.run_name = "rgb-semseg-40epoch_coreset_sum_20"
+    config.run_name = "linear_adapter"
     config.log_dir = "./logs/"
     config.cons_lvl = "INFO"
     config.file_lvl = "INFO"
@@ -34,7 +34,7 @@ def depth_configs():
     config.linear_aggregation = 'last'
 
     config.train_dir = "/home/cache/data/dq/clevr/train"
-    config.subset_idx = "/home/cache/data/dq/clevr/train/multimae_sum_index_20.pickle"
+    config.subset_idx = None# "/home/cache/data/dq/clevr/train/multimae_sum_index_20.pickle"
     config.val_dir = "/home/cache/data/dq/clevr/val"
 
     config.seed = 0xAB0BA

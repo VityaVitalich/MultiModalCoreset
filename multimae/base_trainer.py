@@ -78,6 +78,7 @@ class BaseTrainer:
         ckpt_resume: Union[str, os.PathLike, None] = None,
         device: str = "cpu",
         metrics_on_train: bool = False,
+        return_all_layers: bool = False
     ):
         """Initialize trainer.
 
@@ -138,6 +139,7 @@ class BaseTrainer:
         self._loss_values = None
         self._last_iter = 0
         self._last_epoch = 0
+        self.return_all_layers = return_all_layers
 
     @property
     def model(self) -> Union[nn.Module, None]:
@@ -296,8 +298,8 @@ class BaseTrainer:
             task_dict = {k: v.to(self._device) for k, v in inp.items()}
 
             pred = self._model(
-                task_dict, return_all_layers=True
-            )  # TODO: fix return all to only of dpt output adapter
+                task_dict, return_all_layers=self.return_all_layers
+            )
             if self._metrics_on_train:
                 scores.append(self.compute_score(pred, gt))
 
@@ -352,7 +354,7 @@ class BaseTrainer:
         with torch.no_grad():
             for inp, gt in tqdm(self._val_loader):
                 task_dict = {k: v.to(self._device) for k, v in inp.items()}
-                pred = self._model(task_dict, return_all_layers=True)
+                pred = self._model(task_dict, return_all_layers=self.return_all_layers)
                 pred = self.dict_to_cpu(pred)
                 scores.append(self.compute_score(pred, gt))
 
@@ -384,7 +386,7 @@ class BaseTrainer:
             for inp, gt in tqdm(loader):
                 gts.append(gt.to(self._device))
                 inp = inp.to(self._device)
-                pred = self._model(inp)
+                pred = self._model(inp, return_all_layers=self.return_all_layers)
                 preds.append(pred)
 
         return preds, gts
