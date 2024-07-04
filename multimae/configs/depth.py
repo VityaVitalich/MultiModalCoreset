@@ -28,7 +28,10 @@ def depth_configs():
     config.total_epochs = 40
     config.batch_size = 128
 
-    config.output_adapter = 'linear_depth'
+    config.output_adapter = 'dpt'
+    # dimension of bottleneck. Set to None to disable bottlenecking
+    config.dpt_bottleneck_dim = 1024
+
     config.linear_hidden_dims = [4096, 4096]
     config.linear_use_norm = True
     config.linear_aggregation = 'last'
