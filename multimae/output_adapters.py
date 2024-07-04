@@ -456,7 +456,7 @@ class LinearDepthAdapter(nn.Module):
         - input_dim: The dimension of the input image tokens.
         - hidden_dims: A list of dimensions for the hidden layers.
         - output_size: The size of the output depth map (e.g., 224 for a 224x224 image).
-        - aggregation: The method to aggregate tokens, either 'mean' or 'first'.
+        - aggregation: The method to aggregate tokens, either 'mean' or 'last'.
         """
         super().__init__()
         
@@ -740,9 +740,8 @@ class ConvNeXtAdapter(nn.Module):
 
         return x
 
-
 class DPTOutputAdapter(nn.Module):
-    """DPT output adapter.
+    """DPT output adapter with optional bottleneck layer.
 
     :param num_classes: Number of output channels
     :param stride_level: tride level compared to the full-sized image.
@@ -754,6 +753,7 @@ class DPTOutputAdapter(nn.Module):
     :param feature_dim: Feature dimension
     :param use_bn: If set to True, activates batch norm
     :param dim_tokens_enc:  Dimension of tokens coming from encoder
+    :param bottleneck_dim: Optional dimension for bottleneck layer
     """
 
     def __init__(
@@ -768,6 +768,8 @@ class DPTOutputAdapter(nn.Module):
         use_bn: bool = False,
         dim_tokens_enc: Optional[int] = None,
         head_type: str = "regression",
+        bottleneck_dim: Optional[int] = None,
+        image_size: Optional[int] = None,
         **kwargs,
     ):
         super().__init__()
@@ -784,7 +786,7 @@ class DPTOutputAdapter(nn.Module):
             else None
         )
         self.head_type = head_type
-
+        self.bottleneck_dim = bottleneck_dim
 
         # Actual patch height and width, taking into account stride of input
         self.P_H = max(1, self.patch_size[0] // stride_level)
@@ -799,27 +801,45 @@ class DPTOutputAdapter(nn.Module):
             feature_dim, use_bn, use_first_refconf=False
         )
 
+        if bottleneck_dim:
+            assert image_size
+            self.bottleneck_down = nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(image_size * image_size, bottleneck_dim),
+            )
+            self.bottleneck_up = nn.Sequential(
+                nn.ReLU(True),
+                nn.Linear(bottleneck_dim, image_size * image_size),
+                nn.Unflatten(1, (1, image_size, image_size)),
+            )
+        else:
+            self.bottleneck_down = nn.Identity()
+            self.bottleneck_up = nn.Identity()
+        
+        head_input_dim = feature_dim
+
         if self.head_type == "regression":
             # The "DPTDepthModel" head
             self.head = nn.Sequential(
                 nn.Conv2d(
-                    feature_dim, feature_dim // 2, kernel_size=3, stride=1, padding=1
+                    head_input_dim, head_input_dim // 2, kernel_size=3, stride=1, padding=1
                 ),
                 Interpolate(scale_factor=2, mode="bilinear", align_corners=True),
-                nn.Conv2d(feature_dim // 2, 32, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(head_input_dim // 2, 32, kernel_size=3, stride=1, padding=1),
                 nn.ReLU(True),
-                nn.Conv2d(32, self.num_channels, kernel_size=1, stride=1, padding=0),
+                nn.Conv2d(32, self.num_channels, kernel_size=1, stride=1, padding=0)
             )
+
         elif self.head_type == "semseg":
             # The "DPTSegmentationModel" head
             self.head = nn.Sequential(
                 nn.Conv2d(
-                    feature_dim, feature_dim, kernel_size=3, padding=1, bias=False
+                    head_input_dim, head_input_dim, kernel_size=3, padding=1, bias=False
                 ),
-                nn.BatchNorm2d(feature_dim) if use_bn else nn.Identity(),
+                nn.BatchNorm2d(head_input_dim) if use_bn else nn.Identity(),
                 nn.ReLU(True),
                 nn.Dropout(0.1, False),
-                nn.Conv2d(feature_dim, self.num_channels, kernel_size=1),
+                nn.Conv2d(head_input_dim, self.num_channels, kernel_size=1),
                 Interpolate(scale_factor=2, mode="bilinear", align_corners=True),
             )
         else:
@@ -958,9 +978,12 @@ class DPTOutputAdapter(nn.Module):
         path_2 = self.scratch.refinenet2(path_3, layers[1])
         path_1 = self.scratch.refinenet1(path_2, layers[0])
 
-        if return_embedding:
-            return path_1
+
         # Output head
-        out = self.head(path_1)
+        embedding = self.bottleneck_down(self.head(path_1))
+        out = self.bottleneck_up(embedding)
+
+        if return_embedding:
+            return embedding, out
 
         return out
