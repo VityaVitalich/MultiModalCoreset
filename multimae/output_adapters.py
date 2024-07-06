@@ -803,14 +803,19 @@ class DPTOutputAdapter(nn.Module):
 
         if bottleneck_dim:
             assert image_size
-            self.bottleneck_down = nn.Sequential(
-                nn.Flatten(),
-                nn.Linear(image_size * image_size, bottleneck_dim),
-            )
-            self.bottleneck_up = nn.Sequential(
+            # self.bottleneck_down = nn.Sequential(
+            #     nn.Flatten(),
+            #     nn.Linear(image_size * image_size, bottleneck_dim),
+            # )
+            # self.bottleneck_up = nn.Sequential(
+            #     nn.ReLU(True),
+            #     nn.Linear(bottleneck_dim, image_size * image_size),
+            #     nn.Unflatten(1, (1, image_size, image_size)),
+            # )
+            bottleneck_down = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=2)
+            bottleneck_up = nn.Sequential(
                 nn.ReLU(True),
-                nn.Linear(bottleneck_dim, image_size * image_size),
-                nn.Unflatten(1, (1, image_size, image_size)),
+                nn.ConvTranspose2d(in_channels=1, out_channels=1, kernel_size=3, stride=2, output_padding=1),
             )
         else:
             self.bottleneck_down = nn.Identity()
