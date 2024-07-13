@@ -768,8 +768,6 @@ class DPTOutputAdapter(nn.Module):
         use_bn: bool = False,
         dim_tokens_enc: Optional[int] = None,
         head_type: str = "regression",
-        bottleneck_dim: Optional[int] = None,
-        image_size: Optional[int] = None,
         **kwargs,
     ):
         super().__init__()
@@ -786,7 +784,6 @@ class DPTOutputAdapter(nn.Module):
             else None
         )
         self.head_type = head_type
-        self.bottleneck_dim = bottleneck_dim
 
         # Actual patch height and width, taking into account stride of input
         self.P_H = max(1, self.patch_size[0] // stride_level)
@@ -800,26 +797,6 @@ class DPTOutputAdapter(nn.Module):
         self.scratch.refinenet4 = make_fusion_block(
             feature_dim, use_bn, use_first_refconf=False
         )
-
-        if bottleneck_dim:
-            assert image_size
-            # self.bottleneck_down = nn.Sequential(
-            #     nn.Flatten(),
-            #     nn.Linear(image_size * image_size, bottleneck_dim),
-            # )
-            # self.bottleneck_up = nn.Sequential(
-            #     nn.ReLU(True),
-            #     nn.Linear(bottleneck_dim, image_size * image_size),
-            #     nn.Unflatten(1, (1, image_size, image_size)),
-            # )
-            bottleneck_down = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=2)
-            bottleneck_up = nn.Sequential(
-                nn.ReLU(True),
-                nn.ConvTranspose2d(in_channels=1, out_channels=1, kernel_size=3, stride=2, output_padding=1),
-            )
-        else:
-            self.bottleneck_down = nn.Identity()
-            self.bottleneck_up = nn.Identity()
         
         head_input_dim = feature_dim
 
@@ -985,10 +962,9 @@ class DPTOutputAdapter(nn.Module):
 
 
         # Output head
-        embedding = self.bottleneck_down(self.head(path_1))
-        out = self.bottleneck_up(embedding)
+        out = self.head(path_1)
 
         if return_embedding:
-            return embedding, out
+            return path_1, out
 
         return out

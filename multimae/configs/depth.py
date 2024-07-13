@@ -29,8 +29,7 @@ def depth_configs():
     config.batch_size = 128
 
     config.output_adapter = 'dpt'
-    # dimension of bottleneck. Set to None to disable bottlenecking
-    config.dpt_bottleneck_dim = 1024
+
 
     config.linear_hidden_dims = [4096, 4096]
     config.linear_use_norm = True
@@ -45,6 +44,10 @@ def depth_configs():
 
 def embedding_configs():
     config = ml_collections.ConfigDict()
+
+    config.embedding_type = 'transformer_out' #head_out or transformer_out
+    
+    config.saving_path = '<your path>' #used only for head_out as embeddings are too big
 
     config.aggregation = 'sum'
     config.device = "cuda"

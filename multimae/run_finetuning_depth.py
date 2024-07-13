@@ -118,7 +118,7 @@ if __name__ == "__main__":
     # DPT settings are fixed for ViT-B. Modify them if using a different backbone.
 
     adapters_dict = {
-        "dpt": partial(DPTOutputAdapter, bottleneck_dim=config.dpt_bottleneck_dim, image_size=input_size),
+        "dpt": DPTOutputAdapter,
         "convnext": partial(ConvNeXtAdapter, preds_per_patch=64),
         "linear_depth": partial(LinearDepthAdapter,
                                 input_dim=768,
