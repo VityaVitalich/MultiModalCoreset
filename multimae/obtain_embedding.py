@@ -48,6 +48,25 @@ def obtain_embeddings(model, loader, device, aggregation='none'):
 
     return np.vstack(all_embeddings)
 
+@torch.no_grad()
+def obtain_head_embeddings(model, loader, device, saving_path):
+
+    if not os.path.exists(saving_path):
+        os.makedirs(saving_path)
+
+
+    for i, (inp, gt) in tqdm(enumerate(loader), total=len(loader)):
+        inp, gt = inp, gt.to(device)
+
+        task_dict = {k: v.to(device) for k, v in inp.items()}
+
+        out = model(task_dict, return_all_layers=True, return_embedding=True)
+        out = out['depth'][0].cpu()
+        
+        saving_name = f'{saving_path}/batch_{i}.pt'
+        torch.save(out, saving_name)
+
+
 config = embedding_configs()
 
 seed_everything(seed=config.seed)
@@ -55,6 +74,7 @@ seed_everything(seed=config.seed)
 
 if __name__ == "__main__":
     device = config.device
+    embedding_type = config.embedding_type
 
     # SETUP DOMAIN ADAPTERS ###
 
@@ -193,8 +213,12 @@ if __name__ == "__main__":
         train_dataset, batch_size=bs, shuffle=False, drop_last=False
     )
 
-    embeds = obtain_embeddings(model, train_loader, device, aggregation=config.aggregation)
-    np.save(config.embed_save_path, embeds)
+    if embedding_type == 'transformer_out':
+        embeds = obtain_embeddings(model, train_loader, device, aggregation=config.aggregation)
+        np.save(config.embed_save_path, embeds)
+
+    elif embedding_type == 'head_out':
+        obtain_head_embeddings(model, train_loader, device, saving_path=config.saving_path)
 
 
 
