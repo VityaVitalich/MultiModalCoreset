@@ -1,5 +1,7 @@
-# Multi Modal Coreset Selection
+# Challenges of Multi-Modal Coreset Selection for Depth Prediction
 
+
+This repository contains code for paper [Challenges of Multi-Modal Coreset Selection for Depth Prediction](https://arxiv.org/abs/2502.15834) from ICLR 2025 ICBINB Workshop.
 
 ## Replicating Experiments
 
